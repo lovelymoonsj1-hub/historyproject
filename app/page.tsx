@@ -50,7 +50,7 @@ function searchScore(entry: HistoryEntry, value: string) {
   return titleHits * 100 + matches.reduce((total, term) => total + term.length, 0);
 }
 function yearOf(entry: HistoryEntry) { const found = entry.years.match(/\d{1,4}/); return found ? Number(found[0]) : 0; }
-type QuizQuestion = { question: string; options: string[]; answer: number; explanation: string };
+type QuizQuestion = { question: string; options: string[]; answer: number; explanation: string; optionNotes?: string[] };
 function legacyQuizFor(entry: HistoryEntry): QuizQuestion[] {
   const related = entry.related[0]?.label ?? "관련 개념";
   const secondRelated = entry.related[1]?.label ?? "당시의 생활 모습";
@@ -66,6 +66,29 @@ function quizOptions(correct: string, distractors: string[], seed: number) {
   const offset = Math.abs(seed) % values.length;
   const options = values.map((_, index) => values[(index + offset) % values.length]);
   return { options, answer: options.indexOf(correct) };
+}
+
+function optionNotes(entry: HistoryEntry, options: string[], correct: string, kind: "summary" | "connection" | "related") {
+  return options.map((option) => {
+    if (option === correct) return "";
+    const owner = allEntries.find((item) => kind === "summary"
+      ? item.summary === option
+      : kind === "connection"
+        ? item.connection === option
+        : option.startsWith(item.title));
+    const ownerText = owner
+      ? `\u2018${owner.title}\u2019\uC744(\uB97C) \uC124\uBA85\uD558\uB294 \uBCF4\uAE30\uC608\uC694.`
+      : "\uB2E4\uB978 \uC5ED\uC0AC \uAC1C\uB150\uC744 \uC124\uBA85\uD558\uB294 \uBCF4\uAE30\uC608\uC694.";
+    return `${ownerText} \uC774 \uBB38\uC81C\uC758 \uC8FC\uC81C\uB294 \u2018${entry.title}\u2019\uC774\uBBC0\uB85C, \uC815\uB2F5\uC778 \u2018${correct}\u2019\uACFC\uB294 \uB9DE\uC9C0 \uC54A\uC544\uC694.`;
+  });
+}
+
+function wrongOptionExplanation(entry: HistoryEntry, option: string, correct: string) {
+  const owner = allEntries.find((item) => item.summary === option || item.connection === option || option.startsWith(item.title));
+  const ownerText = owner
+    ? `\uC120\uD0DD\uD55C \uBCF4\uAE30\uB294 \u2018${owner.title}\u2019\uC744(\uB97C) \uC124\uBA85\uD574\uC694.`
+    : "\uC120\uD0DD\uD55C \uBCF4\uAE30\uB294 \uB2E4\uB978 \uC5ED\uC0AC \uAC1C\uB150\uC744 \uC124\uBA85\uD574\uC694.";
+  return `${ownerText} \uC774 \uBB38\uC81C\uB294 \u2018${entry.title}\u2019\uC5D0 \uB300\uD55C \uBB38\uC81C\uC774\uBBC0\uB85C, \uC815\uB2F5\uC778 \u2018${correct}\u2019\uACFC\uB294 \uB9DE\uC9C0 \uC54A\uC544\uC694.`;
 }
 
 function quizFor(entry: HistoryEntry): QuizQuestion[] {
@@ -108,6 +131,9 @@ export default function Home() {
   const follow = (term: string) => { const item = allEntries.find((entry) => entry.title === term) ?? allEntries.find((entry) => entry.keywords.includes(term)); if (item) select(item); else setQuery(term); };
   const quiz = quizFor(selected);
   const currentQuiz = quiz[quizStep];
+  if (quizFeedback === "wrong" && quizChoice !== null && currentQuiz) {
+    currentQuiz.explanation = wrongOptionExplanation(selected, currentQuiz.options[quizChoice], currentQuiz.options[currentQuiz.answer]);
+  }
   const answerQuiz = (choice: number) => { if (quizFeedback) return; setQuizChoice(choice); setQuizFeedback(choice === currentQuiz.answer ? "correct" : "wrong"); };
   const nextQuiz = () => { if (quizStep < quiz.length - 1) { setQuizStep((step) => step + 1); setQuizChoice(null); setQuizFeedback(null); } else { setQuizStep(quiz.length); setQuizChoice(null); setQuizFeedback(null); } };
   const retryQuiz = () => { setQuizChoice(null); setQuizFeedback(null); };
