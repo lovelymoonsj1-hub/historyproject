@@ -8,8 +8,15 @@ export type LearningSession = {
 };
 
 function learningEmail(learningId: string) {
-  const safeId = learningId.trim().toLowerCase().replace(/[^a-z0-9\uac00-\ud7a3_-]/g, "");
-  return `${safeId}@yeokjuhang.invalid`;
+  // Supabase email sign-in needs an ASCII email address. Turn every learning ID
+  // (including Korean text) into a stable internal-only identifier first.
+  const safeId = Array.from(learningId.trim().toLowerCase())
+    .map((character) => /[a-z0-9_-]/.test(character)
+      ? character
+      : `u${character.codePointAt(0)?.toString(16) ?? ""}`)
+    .join("")
+    .slice(0, 48);
+  return `${safeId}@history-explorers.lumiolab-4734.chatgpt.site`;
 }
 
 async function request(path: string, options: RequestInit = {}) {
