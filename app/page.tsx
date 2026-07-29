@@ -4,10 +4,13 @@ import { useMemo, useState } from "react";
 import { historyEntries, type HistoryEntry } from "../data/history-data";
 import { lateHistoryEntries } from "../data/late-history-data";
 import { additionalSearchEntries } from "../data/additional-search-data";
+import { curriculumCoreEntries } from "../data/curriculum-core-data";
 import { LearningAccount } from "../components/LearningAccount";
 import { recordQuizAttempt } from "../lib/supabase-learning";
 
-const allEntries = [...historyEntries, ...lateHistoryEntries, ...additionalSearchEntries];
+const entryKey = (value: string) => value.toLowerCase().normalize("NFC").replace(/[^0-9a-z\uac00-\ud7a3]/g, "");
+const allEntries = [...historyEntries, ...lateHistoryEntries, ...additionalSearchEntries, ...curriculumCoreEntries]
+  .filter((entry, index, entries) => entries.findIndex((candidate) => entryKey(candidate.title) === entryKey(entry.title)) === index);
 const searchAliasMap: Record<string, string[]> = {
   "세종": ["세종대왕", "세종 대왕"],
   "이성계": ["태조 이성계"],
