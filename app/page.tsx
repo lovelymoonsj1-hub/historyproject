@@ -111,7 +111,7 @@ function quizFor(entry: HistoryEntry): QuizQuestion[] {
 
 export default function Home() {
   const [query, setQuery] = useState("");
-  const [selectedId, setSelectedId] = useState("\uACE0\uB824");
+  const [selectedId, setSelectedId] = useState("\uAD6C\uC11D\uAE30 \uC2DC\uB300");
   const [quizStep, setQuizStep] = useState(0);
   const [quizChoice, setQuizChoice] = useState<number | null>(null);
   const [quizFeedback, setQuizFeedback] = useState<"correct" | "wrong" | null>(null);
