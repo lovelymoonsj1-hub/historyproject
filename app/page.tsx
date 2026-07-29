@@ -163,14 +163,32 @@ const referenceVisuals: ReferenceVisual[] = [
   { terms: ["\ubc1c\ud574", "\ub300\uc870\uc601"], src: "/images/reference/ybm-history-30.jpg", title: "\ubc1c\ud574\uc758 \uac74\uad6d", note: "\uace0\uad6c\ub824\ub97c \uacc4\uc2b9\ud55c \ubc1c\ud574\uc640 \ud1b5\uc77c \uc2e0\ub77c\uac00 \ud568\uaed8 \uc788\ub358 \uc2dc\uae30\uc608\uc694." },
   { terms: ["\ud1b5\uc77c \uc2e0\ub77c", "\uc7a5\ubcf4\uace0", "\ubd84\ud669\uc0ac", "\uc11d\uad74\uc554"], src: "/images/reference/ybm-history-33.jpg", title: "\ud1b5\uc77c \uc2e0\ub77c\uc758 \ubd88\uad50 \uc720\uc801", note: "\ud1b5\uc77c \uc2e0\ub77c\uac00 \ubd88\uad50 \ubb38\ud654\ub97c \ubc1c\uc804\uc2dc\ud0a8 \ubaa8\uc2b5\uc744 \uc0b4\ud3b4\ubd10\uc694." },
   { terms: ["\ud0dc\uc870 \uc655\uac74", "\ud6c4\uc0bc\uad6d", "\uace0\ub824\uc758 \uac74\uad6d"], src: "/images/reference/ybm-history-39.jpg", title: "\uace0\ub824\uc758 \uac74\uad6d", note: "\uc655\uac74\uc774 \ud6c4\uc0bc\uad6d\uc744 \ud1b5\uc77c\ud558\uace0 \uace0\ub824\ub97c \uc138\uc6b4 \uacfc\uc815\uc744 \ubd10\uc694." },
+  { terms: ["\uc5ec\uc9c4", "\uc724\uad00", "\ubcc4\ubb34\ubc18", "\ub3d9\ubd81 9\uc131"], src: "/images/reference/ybm-history-41.jpg", title: "\uace0\ub824\uc640 \uc8fc\ubcc0 \ub098\ub77c\ub4e4", note: "\uc5ec\uc9c4\u00b7\uac70\ub780\u00b7\uc1a1\u00b7\ubabd\uace8\uacfc \uad00\ub828\ud55c \uace0\ub824\uc758 \ub300\uc751\uacfc \uad50\ub958\ub97c \uc0b4\ud3b4\ubd10\uc694." },
   { terms: ["\uac70\ub780", "\uac15\uac10\ucc2c", "\uadc0\uc8fc\ub300\ucca9"], src: "/images/reference/ybm-history-43.jpg", title: "\uac70\ub780\uc758 \uce68\uc785\uacfc \uadf9\ubcf5", note: "\uace0\ub824\uac00 \uac70\ub780\uc758 \uce68\uc785\uc744 \uadf9\ubcf5\ud55c \uacfc\uc815\uc744 \uc21c\uc11c\ub300\ub85c \uc0b4\ud3b4\ubd10\uc694." },
   { terms: ["\ud314\ub9cc\ub300\uc7a5\uacbd", "\ub300\uc7a5\uacbd\ud310", "\ubabd\uace8"], src: "/images/reference/ybm-history-49.jpg", title: "\uace0\ub824\uc758 \ubd88\uad50 \ubb38\ud654", note: "\ubabd\uace8 \uce68\uc785 \uc18d\uc5d0\uc11c \ud314\ub9cc\ub300\uc7a5\uacbd\uc744 \ub9cc\ub4e0 \uc0ac\ub78c\ub4e4\uc758 \ub9c8\uc74c\uc744 \uc0dd\uac01\ud574 \ubd10\uc694." },
   { terms: ["\uccad\uc790", "\uc0c1\uac10", "\uc9c1\uc9c0", "\uae08\uc18d \ud65c\uc790", "\uace0\ub824"], src: "/images/reference/ybm-history-47.jpg", title: "\uace0\ub824\uc758 \ub6f0\uc5b4\ub09c \uacf5\uc608", note: "\ube44\uc0c9\uacfc \uc0c1\uac10 \uae30\ubc95\uc73c\ub85c \uc54c\ub824\uc9c4 \uace0\ub824\uccad\uc790\ub97c \uad00\ucc30\ud574 \ubd10\uc694." },
 ];
 
+const preferredVisualByTitle: Record<string, string> = {
+  "\uace0\ub824": "/images/reference/ybm-history-39.jpg",
+  "\uc5ec\uc9c4": "/images/reference/ybm-history-41.jpg",
+};
+
 function referenceVisualFor(entry: HistoryEntry) {
   const entryText = `${entry.title} ${entry.era} ${entry.keywords.join(" ")}`;
-  return referenceVisuals.find((visual) => visual.terms.some((term) => entryText.includes(term)));
+  const preferredSrc = preferredVisualByTitle[entry.title];
+  if (preferredSrc) return referenceVisuals.find((visual) => visual.src === preferredSrc);
+  const title = entry.title;
+  const keywords = entry.keywords;
+  const score = (visual: ReferenceVisual) => visual.terms.reduce((total, term) => {
+    if (title === term) return total + 10000 + term.length;
+    if (title.includes(term)) return total + 1000 + term.length;
+    if (keywords.some((keyword) => keyword === term)) return total + 500 + term.length;
+    if (keywords.some((keyword) => keyword.includes(term))) return total + 100 + term.length;
+    if (entry.era.includes(term)) return total + 1;
+    return total;
+  }, 0);
+  return referenceVisuals.map((visual) => ({ visual, score: score(visual) })).filter((item) => item.score > 0).sort((a, b) => b.score - a.score)[0]?.visual;
 }
 
 const officialImageSources = [
