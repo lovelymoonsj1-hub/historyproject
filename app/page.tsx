@@ -153,11 +153,11 @@ function LandingHero({ onStart }: { onStart: () => void }) {
     <div className="overflow-hidden rounded-[34px] border border-[#ead0aa] bg-[#fff9ef] shadow-sm">
       <div className="grid items-center gap-5 p-5 md:grid-cols-[.78fr_1.22fr] md:p-9">
         <div className="relative z-10 px-2 py-5 md:px-5">
-          <p className="text-sm font-black tracking-wide text-[#d2744d]">역주행 · 역사를 주도하는 시간 여행</p>
-          <h1 className="mt-4 text-5xl font-black leading-[1.12] tracking-tight text-[#41382e] md:text-6xl">역사는<br /><span className="text-[#d2744d]">흐름이다.</span></h1>
-          <p className="mt-5 max-w-md text-base leading-7 text-stone-600">인물, 사건, 문화유산을 시간의 흐름으로 연결하며 우리 역사를 탐험해요.</p>
-          <button type="button" onClick={onStart} className="mt-7 rounded-full bg-[#57958f] px-6 py-3 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#397e79]">시간 여행 시작하기 →</button>
-          <p className="mt-4 text-xs font-bold text-[#aa6d28]">구석기 시대부터 6·25전쟁까지</p>
+          <p className="text-xl font-black leading-8 tracking-tight text-[#d2744d] md:text-2xl">역주행 · 역사를 주도하는 시간 여행</p>
+          <h1 className="mt-4 text-6xl font-black leading-[1.08] tracking-tight text-[#41382e] md:text-7xl">역사는<br /><span className="text-[#d2744d]">흐름이다.</span></h1>
+          <p className="mt-6 max-w-md text-lg leading-8 text-stone-600 md:text-xl md:leading-9">인물, 사건, 문화유산을 시간의 흐름으로 연결하며 우리 역사를 탐험해요.</p>
+          <button type="button" onClick={onStart} className="mt-7 rounded-full bg-[#57958f] px-7 py-3.5 text-base font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#397e79] md:text-lg">시간 여행 시작하기 →</button>
+          <p className="mt-5 inline-flex rounded-full bg-[#fff0d6] px-4 py-2 text-base font-black text-[#aa6d28] md:text-lg">구석기 시대부터 6·25전쟁까지</p>
         </div>
         <div className="relative overflow-hidden rounded-[26px] bg-[#f7dfbb]"><img src="/images/history-explorers-hero.png" alt="남학생과 여학생이 한국사 지도와 연표를 함께 탐구하는 모습" className="h-full min-h-72 w-full object-cover" /></div>
       </div>
