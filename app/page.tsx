@@ -109,9 +109,27 @@ function quizFor(entry: HistoryEntry): QuizQuestion[] {
   ];
 }
 
+function LandingHero({ onStart }: { onStart: () => void }) {
+  return <section className="mx-auto max-w-6xl px-5 py-8 md:px-10 md:py-12" aria-label="역주행 시작 화면">
+    <div className="overflow-hidden rounded-[34px] border border-[#ead0aa] bg-[#fff9ef] shadow-sm">
+      <div className="grid items-center gap-5 p-5 md:grid-cols-[.78fr_1.22fr] md:p-9">
+        <div className="relative z-10 px-2 py-5 md:px-5">
+          <p className="text-sm font-black tracking-wide text-[#d2744d]">역주행 · 역사를 주도하는 시간 여행</p>
+          <h1 className="mt-4 text-5xl font-black leading-[1.12] tracking-tight text-[#41382e] md:text-6xl">역사는<br /><span className="text-[#d2744d]">흐름이다.</span></h1>
+          <p className="mt-5 max-w-md text-base leading-7 text-stone-600">인물, 사건, 문화유산을 시간의 흐름으로 연결하며 우리 역사를 탐험해요.</p>
+          <button type="button" onClick={onStart} className="mt-7 rounded-full bg-[#57958f] px-6 py-3 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#397e79]">시간 여행 시작하기 →</button>
+          <p className="mt-4 text-xs font-bold text-[#aa6d28]">구석기 시대부터 6·25전쟁까지</p>
+        </div>
+        <div className="relative overflow-hidden rounded-[26px] bg-[#f7dfbb]"><img src="/images/history-explorers-hero.png" alt="남학생과 여학생이 한국사 지도와 연표를 함께 탐구하는 모습" className="h-full min-h-72 w-full object-cover" /></div>
+      </div>
+    </div>
+  </section>;
+}
+
 export default function Home() {
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState("\uAD6C\uC11D\uAE30 \uC2DC\uB300");
+  const [showWelcome, setShowWelcome] = useState(true);
   const [quizStep, setQuizStep] = useState(0);
   const [quizChoice, setQuizChoice] = useState<number | null>(null);
   const [quizFeedback, setQuizFeedback] = useState<"correct" | "wrong" | null>(null);
@@ -129,7 +147,7 @@ export default function Home() {
   const ordered = useMemo(() => [...allEntries].sort((a,b) => yearOf(a) - yearOf(b)), []);
   const currentIndex = ordered.findIndex((entry) => entry.title === selected.title);
   const nearby = ordered.filter((_, index) => index >= Math.max(0,currentIndex-2) && index <= Math.min(ordered.length-1,currentIndex+2));
-  const select = (entry: HistoryEntry) => { setSelectedId(entry.title); setQuery(""); setQuizStep(0); setQuizChoice(null); setQuizFeedback(null); setLearningMode(null); };
+  const select = (entry: HistoryEntry) => { setSelectedId(entry.title); setShowWelcome(false); setQuery(""); setQuizStep(0); setQuizChoice(null); setQuizFeedback(null); setLearningMode(null); };
   const follow = (term: string) => { const item = allEntries.find((entry) => entry.title === term) ?? allEntries.find((entry) => entry.keywords.includes(term)); if (item) select(item); else setQuery(term); };
   const quiz = quizFor(selected);
   const currentQuiz = quiz[quizStep];
@@ -143,7 +161,7 @@ export default function Home() {
   return <main className="min-h-screen bg-[#fbf3e4] text-[#41382e]">
     {query && suggestions.length > 0 && <div className="fixed right-5 top-[4.5rem] z-40 w-[min(47vw,440px)] overflow-hidden rounded-2xl border border-[#e0c9a8] bg-white p-2 shadow-lg md:right-12" role="listbox" aria-label="검색어 자동완성">{suggestions.map((entry)=><button type="button" role="option" key={`suggest-${entry.title}`} onClick={()=>select(entry)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left hover:bg-[#fff3df]"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#eaf5ed] text-sm font-black text-[#57958f]">↗</span><span className="min-w-0"><b className="block truncate text-sm">{entry.title}</b><small className="block truncate text-xs text-stone-500">{entry.era} · {entry.type}</small></span></button>)}</div>}
     <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-[#ead5b8] bg-[#fff9ef]/95 px-5 py-3 backdrop-blur md:px-12"><div><b className="text-2xl tracking-tight text-[#d2744d]">{t.app}</b><span className="ml-2 text-xs text-stone-500">{t.sub}</span></div><div className="flex items-center gap-2"><label className="relative w-[min(47vw,440px)]"><span className="absolute left-3 top-2 text-lg text-[#57958f]">⌕</span><input className="w-full rounded-full border border-[#e0c9a8] bg-white px-9 py-2 text-sm outline-none focus:border-[#57958f]" value={query} onChange={(event)=>setQuery(event.target.value)} placeholder={t.search} aria-label={t.search}/></label><LearningAccount /></div></header>
-    <section className="mx-auto max-w-6xl px-5 py-9 md:px-10"><p className="text-xs font-bold text-[#d2744d]">{t.home}</p><h1 className="mt-2 text-4xl font-black tracking-tight md:text-5xl">{selected.title}</h1><p className="mt-2 text-stone-500">{selected.era} · {selected.years}</p>
+    {showWelcome && !query ? <LandingHero onStart={() => setShowWelcome(false)} /> : <section className="mx-auto max-w-6xl px-5 py-9 md:px-10"><p className="text-xs font-bold text-[#d2744d]">{t.home}</p><h1 className="mt-2 text-4xl font-black tracking-tight md:text-5xl">{selected.title}</h1><p className="mt-2 text-stone-500">{selected.era} · {selected.years}</p>
       {query && <section className="mt-5 rounded-3xl border border-[#e6d0b1] bg-white p-5"><h2 className="font-bold">{t.result} <span className="text-[#d2744d]">{results.length}</span></h2>{results.length ? <div className="mt-3 grid gap-2 md:grid-cols-2">{results.map((entry)=><button className="rounded-2xl bg-[#fff5e5] p-4 text-left hover:bg-[#e8f3ed]" key={entry.title} onClick={()=>select(entry)}><small className="text-[#57958f]">{entry.era} · {entry.type}</small><b className="ml-2">{entry.title}</b><p className="mt-2 text-xs text-stone-600">{entry.summary}</p></button>)}</div> : <p className="mt-3 text-sm text-stone-600">{t.noResult} {t.hint}</p>}</section>}
       <div className="mt-7 grid gap-5 lg:grid-cols-[1.45fr_.8fr]">
         <article className="overflow-hidden rounded-[28px] border border-[#e7d0af] bg-[#fffaf1] shadow-sm"><div className="bg-gradient-to-r from-[#f8d7a7] to-[#e3efe6] p-6"><span className="rounded-full bg-[#57958f] px-3 py-1 text-xs font-bold text-white">{selected.type}</span><p className="mt-4 text-lg leading-8">{selected.summary}</p></div><div className="p-6"><h2 className="text-sm font-bold text-[#57958f]">{t.flow}</h2><p className="mt-2 text-lg font-bold leading-7">{selected.connection}</p><div className="mt-6 grid gap-3 md:grid-cols-3">{selected.story.map((item,index)=><div className="rounded-2xl border-t-4 border-[#e9a05d] bg-[#fff4df] p-4" key={item.label}><small className="font-bold text-[#b36b2c]">0{index+1} · {item.label}</small><p className="mt-2 text-sm leading-6 text-stone-700">{item.value}</p></div>)}</div></div></article>
@@ -166,6 +184,6 @@ export default function Home() {
       </section>}
       <section className="mt-6 rounded-3xl border border-[#d9e5dc] bg-[#eff7f1] p-6 md:p-7"><div className="flex flex-wrap items-end justify-between gap-2"><div><h2 className="text-xl font-black md:text-2xl">{t.beforeAfter}</h2><p className="mt-1 text-sm text-stone-600">앞뒤 시대와 사건을 비교하며 흐름을 따라가 보세요.</p></div><span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-[#397e79]">카드를 눌러 이동</span></div><div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">{nearby.map((entry)=><button key={entry.title} onClick={()=>select(entry)} className={entry.title===selected.title ? "min-h-28 rounded-2xl bg-[#57958f] p-5 text-left text-white shadow-sm" : "min-h-28 rounded-2xl bg-white p-5 text-left shadow-sm hover:bg-[#fff3dd]"}><small className="block text-sm font-bold leading-5 opacity-90">{entry.years}</small><b className="mt-2 block text-lg font-black leading-7">{entry.title}</b><span className="mt-2 block text-sm leading-5 opacity-80">{entry.era}</span></button>)}</div></section>
       <section className="mt-6 rounded-3xl border border-[#ead5b8] bg-white p-5" aria-label="정리 퀴즈"><div className="flex flex-wrap items-end justify-between gap-2"><div><p className="text-xs font-black text-[#d2744d]">배운 내용을 확인해요</p><h2 className="mt-1 text-2xl font-black">정리 퀴즈</h2></div><span className="rounded-full bg-[#fff0cf] px-3 py-1 text-xs font-bold text-[#aa6d28]">{quizStep < quiz.length ? `${quizStep + 1} / ${quiz.length} 문제` : "학습 완료"}</span></div>{quizStep < quiz.length ? <><p className="mt-4 text-base font-bold leading-7">{currentQuiz.question}</p><div className="mt-3 grid gap-2">{currentQuiz.options.map((option, index) => { const chosen = quizChoice === index; const correct = currentQuiz.answer === index; const style = quizFeedback && correct ? "border-[#57958f] bg-[#eaf5ed]" : chosen && quizFeedback === "wrong" ? "border-[#d97970] bg-[#fff0ed]" : "border-[#e7d7c0] bg-[#fffaf2] hover:bg-[#fff4df]"; return <button type="button" key={option} onClick={() => answerQuiz(index)} className={`rounded-2xl border-2 p-3 text-left text-sm leading-6 transition ${style}`}><span className="mr-2 inline-grid h-6 w-6 place-items-center rounded-full bg-white font-black text-[#b36b2c]">{index + 1}</span>{option}</button>; })}</div>{quizFeedback && <div className={`mt-4 rounded-2xl p-4 ${quizFeedback === "correct" ? "bg-[#eaf5ed]" : "bg-[#fff0ed]"}`}><p className={`font-black ${quizFeedback === "correct" ? "text-[#397e79]" : "text-[#b6534a]"}`}>{quizFeedback === "correct" ? "정답이에요!" : "보충 설명을 읽고 다시 골라 보세요."}</p><p className="mt-1 text-sm leading-6">{currentQuiz.explanation}</p>{quizFeedback === "correct" ? <button type="button" onClick={nextQuiz} className="mt-3 rounded-full bg-[#57958f] px-4 py-2 text-xs font-black text-white">{quizStep === quiz.length - 1 ? "퀴즈 끝내기" : "다음 문제로 이동"} →</button> : <button type="button" onClick={retryQuiz} className="mt-3 rounded-full bg-[#b6534a] px-4 py-2 text-xs font-black text-white">설명 확인했어요 · 다시 풀기</button>}</div>}</> : <div className="mt-4 rounded-2xl bg-[#eaf5ed] p-5"><p className="font-black text-[#397e79]">정리 퀴즈를 모두 풀었어요!</p><p className="mt-1 text-sm leading-6">{selected.title}의 핵심 내용과 역사적 연결을 잘 확인했어요. 다른 개념을 검색해 또 도전해 보세요.</p><button type="button" onClick={() => { setQuizStep(0); setQuizChoice(null); setQuizFeedback(null); }} className="mt-3 rounded-full bg-[#57958f] px-4 py-2 text-xs font-black text-white">다시 풀기</button></div>}</section>
-    </section>
+    </section>}
   </main>;
 }
