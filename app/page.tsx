@@ -15,7 +15,7 @@ const allEntries = [...historyEntries, ...lateHistoryEntries, ...additionalSearc
   .filter((entry, index, entries) => entries.findIndex((candidate) => entryKey(candidate.title) === entryKey(entry.title)) === index)
   .map((entry) => {
     const note = worksheetNoteFor(entry);
-    return note ? { ...entry, summary: `${entry.summary} ${note.answer}`, keywords: [...entry.keywords, note.answer] } : entry;
+    return note ? { ...entry, summary: `${entry.summary} ${note.answer}`, years: note.years ?? entry.years, era: note.era ?? entry.era, keywords: [...entry.keywords, note.answer] } : entry;
   });
 const searchAliasMap: Record<string, string[]> = {
   "세종": ["세종대왕", "세종 대왕"],
