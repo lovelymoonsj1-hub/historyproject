@@ -43,7 +43,7 @@ export default function Home() {
           <span className="mt-3 inline-block text-sm font-bold text-[#a86c20]">{learningMode === "deep" ? "추천 학습을 접어 보기 ↑" : "심화 학습 추천 보기 →"}</span>
         </button>
         <button type="button" onClick={() => setLearningMode(learningMode === "support" ? null : "support")} className="group rounded-[26px] border border-[#b8d6c5] bg-[#eaf5ed] p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-          <div className="flex items-start justify-between gap-4"><div><span className="rounded-full bg-[#57958f] px-3 py-1 text-xs font-black text-white">더 자세히 알고 싶어요</span><h2 className="mt-3 text-xl font-black">설명이 아직 어려운가요?</h2></div><span className="grid h-11 w-11 place-items-center rounded-full bg-white text-xl">?</span></div>
+          <div className="flex items-start justify-between gap-4"><div><span className="rounded-full bg-[#57958f] px-3 py-1 text-xs font-black text-white">너무 어려워요</span><h2 className="mt-3 text-xl font-black">설명이 아직 어려운가요?</h2></div><span className="grid h-11 w-11 place-items-center rounded-full bg-white text-xl">?</span></div>
           <p className="mt-3 text-sm leading-6 text-stone-700">핵심 용어를 쉬운 말로 다시 풀고, 시간 순서와 예시를 따라가며 한 단계씩 이해해 봐요.</p>
           <span className="mt-3 inline-block text-sm font-bold text-[#397e79]">{learningMode === "support" ? "보충 학습을 접어 보기 ↑" : "보충 학습 추천 보기 →"}</span>
         </button>
