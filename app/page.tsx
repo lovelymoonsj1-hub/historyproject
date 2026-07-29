@@ -6,12 +6,17 @@ import { lateHistoryEntries } from "../data/late-history-data";
 import { additionalSearchEntries } from "../data/additional-search-data";
 import { curriculumCoreEntries } from "../data/curriculum-core-data";
 import { conceptSupportEntries } from "../data/concept-support-data";
+import { worksheetNoteFor } from "../data/worksheet-answer-data";
 import { LearningAccount } from "../components/LearningAccount";
 import { recordQuizAttempt } from "../lib/supabase-learning";
 
 const entryKey = (value: string) => value.toLowerCase().normalize("NFC").replace(/[^0-9a-z\uac00-\ud7a3]/g, "");
 const allEntries = [...historyEntries, ...lateHistoryEntries, ...additionalSearchEntries, ...curriculumCoreEntries, ...conceptSupportEntries]
-  .filter((entry, index, entries) => entries.findIndex((candidate) => entryKey(candidate.title) === entryKey(entry.title)) === index);
+  .filter((entry, index, entries) => entries.findIndex((candidate) => entryKey(candidate.title) === entryKey(entry.title)) === index)
+  .map((entry) => {
+    const note = worksheetNoteFor(entry);
+    return note ? { ...entry, summary: `${entry.summary} ${note.answer}`, keywords: [...entry.keywords, note.answer] } : entry;
+  });
 const searchAliasMap: Record<string, string[]> = {
   "세종": ["세종대왕", "세종 대왕"],
   "이성계": ["태조 이성계"],
