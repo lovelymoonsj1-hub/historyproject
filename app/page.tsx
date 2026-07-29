@@ -3,8 +3,9 @@
 import { useMemo, useState } from "react";
 import { historyEntries, type HistoryEntry } from "../data/history-data";
 import { lateHistoryEntries } from "../data/late-history-data";
+import { additionalSearchEntries } from "../data/additional-search-data";
 
-const allEntries = [...historyEntries, ...lateHistoryEntries];
+const allEntries = [...historyEntries, ...lateHistoryEntries, ...additionalSearchEntries];
 const searchAliasMap: Record<string, string[]> = {
   "세종": ["세종대왕", "세종 대왕"],
   "이성계": ["태조 이성계"],
@@ -23,7 +24,7 @@ const t = {
   app:"\uC5ED\uC8FC\uD589", sub:"\uC5ED\uC0AC\uB97C \uC8FC\uB3C4\uD558\uB294 \uC2DC\uAC04 \uC5EC\uD589", search:"\uAD81\uAE08\uD55C \uC778\uBB3C\u00B7\uC0AC\uAC74\u00B7\uBB38\uD654\uC720\uC0B0\uC744 \uAC80\uC0C9\uD574 \uBCF4\uC138\uC694", result:"\uAC80\uC0C9 \uACB0\uACFC", detail:"\uC5ED\uC0AC \uB9E5\uB77D \uC0C1\uC138 \uD654\uBA74", related:"\uD568\uAED8 \uC5F0\uACB0\uD574 \uBCF4\uC138\uC694", flow:"\uC774\uB7F0 \uD750\uB984\uC73C\uB85C \uC0DD\uAC01\uD574\uC694", beforeAfter:"\uC2DC\uAC04\uC758 \uD750\uB984", noResult:"\uAC80\uC0C9 \uACB0\uACFC\uAC00 \uC5C6\uC5B4\uC694.", hint:"\uC608: \uACE0\uB824, 1019, \uC784\uC9C4\uC65C\uB780, \uD6C8\uBBFC\uC815\uC74C", write:"\uD55C\uB450 \uBB38\uC7A5\uC73C\uB85C \uC815\uB9AC\uD574 \uBCF4\uC138\uC694", prompt:"\uC0DD\uAC01 \uD655\uC778", older:"\uC774\uC804 \uD750\uB984", later:"\uB2E4\uC74C \uD750\uB984", home:"\uD0C0\uC784\uB77C\uC778 \uD0D0\uC0C9" };
 
 function normalize(value: string) { return value.toLowerCase().replace(/[\s·.\-~]/g, ""); }
-function searchableText(entry: HistoryEntry) { return [entry.title, entry.type, entry.era, entry.years, ...entry.keywords, ...(searchAliasMap[entry.title] ?? [])].join(" "); }
+function searchableText(entry: HistoryEntry) { return [entry.title, entry.type, entry.era, entry.years, entry.summary, entry.connection, ...entry.keywords, ...entry.related.flatMap((item) => [item.label, item.query]), ...(searchAliasMap[entry.title] ?? [])].join(" "); }
 function yearOf(entry: HistoryEntry) { const found = entry.years.match(/\d{1,4}/); return found ? Number(found[0]) : 0; }
 type QuizQuestion = { question: string; options: string[]; answer: number; explanation: string };
 function legacyQuizFor(entry: HistoryEntry): QuizQuestion[] {
