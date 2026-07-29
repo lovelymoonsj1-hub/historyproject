@@ -11,13 +11,36 @@ const t = {
 function normalize(value: string) { return value.toLowerCase().replace(/[\s·.\-~]/g, ""); }
 function yearOf(entry: HistoryEntry) { const found = entry.years.match(/\d{1,4}/); return found ? Number(found[0]) : 0; }
 type QuizQuestion = { question: string; options: string[]; answer: number; explanation: string };
-function quizFor(entry: HistoryEntry): QuizQuestion[] {
+function legacyQuizFor(entry: HistoryEntry): QuizQuestion[] {
   const related = entry.related[0]?.label ?? "관련 개념";
   const secondRelated = entry.related[1]?.label ?? "당시의 생활 모습";
   return [
     { question: `${entry.title}을(를) 설명한 내용 중 핵심을 가장 잘 담은 것은 무엇일까요?`, options: [entry.summary, "이름만 비슷할 뿐 역사적 배경은 없는 내용이에요.", "다른 시대의 사건을 오늘날의 일처럼 설명한 내용이에요.", "역사 흐름보다 외우는 순서만 중요한 내용이에요."], answer: 0, explanation: `핵심은 ‘${entry.summary}’이에요. 인물·사건·나라를 배울 때는 무엇을 했는지와 그 의미를 함께 살펴봐요.` },
     { question: `${entry.title}을(를) 역사 흐름 속에서 이해할 때 가장 알맞은 생각은 무엇일까요?`, options: [entry.connection, "앞뒤 시대와 단절되어 있어 다른 내용과 연결할 수 없어요.", "연도는 중요하지 않고 이름만 기억하면 충분해요.", "비슷한 이름의 개념은 모두 같은 뜻이에요."], answer: 0, explanation: `이 개념은 ‘${entry.connection}’처럼 앞뒤 흐름과 연결해서 이해하면 오래 기억할 수 있어요.` },
     { question: `${entry.title}을(를) 더 깊이 탐구할 때 가장 먼저 연결해 볼 내용은 무엇일까요?`, options: [`${entry.title}와 ${related}의 관계`, `${entry.title}와 오늘날의 날씨`, `${entry.title}와 학교 급식`, `${entry.title}와 계절별 놀이`], answer: 0, explanation: `${entry.title}은(는) ${related}와 연결하고, ${secondRelated}까지 함께 살펴보면 배경과 결과를 더 잘 파악할 수 있어요.` },
+  ];
+}
+
+function quizOptions(correct: string, distractors: string[], seed: number) {
+  const values = [correct, ...distractors.filter((item) => item !== correct).slice(0, 3)];
+  const offset = Math.abs(seed) % values.length;
+  const options = values.map((_, index) => values[(index + offset) % values.length]);
+  return { options, answer: options.indexOf(correct) };
+}
+
+function quizFor(entry: HistoryEntry): QuizQuestion[] {
+  const peers = allEntries.filter((item) => item.title !== entry.title && (item.era === entry.era || item.type === entry.type));
+  const fallbackPeers = peers.length >= 3 ? peers : allEntries.filter((item) => item.title !== entry.title);
+  const seed = entry.title.codePointAt(0) ?? 1;
+  const related = entry.related[0]?.label ?? "관련 개념";
+  const q1 = quizOptions(entry.summary, fallbackPeers.slice(0, 3).map((item) => item.summary), seed);
+  const q2 = quizOptions(entry.connection, fallbackPeers.slice(0, 3).map((item) => item.connection), seed + 1);
+  const q3Correct = `${entry.title} ↔ ${related}`;
+  const q3 = quizOptions(q3Correct, fallbackPeers.slice(0, 3).map((item) => `${item.title} ↔ ${item.related[0]?.label ?? "관련 개념"}`), seed + 2);
+  return [
+    { question: `${entry.title}을(를) 설명한 내용 중 핵심을 가장 잘 담은 것은 무엇일까요?`, options: q1.options, answer: q1.answer, explanation: `정답은 ‘${entry.summary}’입니다. 역사 개념은 이름만 외우기보다 무엇을 했고 어떤 의미가 있는지 함께 살펴봐요.` },
+    { question: `${entry.title}을(를) 역사 흐름 속에서 이해할 때 가장 알맞은 연결은 무엇일까요?`, options: q2.options, answer: q2.answer, explanation: `‘${entry.connection}’처럼 앞뒤 흐름과 원인·결과를 연결하면 ${entry.title}의 의미를 더 정확하게 이해할 수 있어요.` },
+    { question: `${entry.title}을(를) 더 깊이 탐구할 때 가장 알맞은 연결 관계는 무엇일까요?`, options: q3.options, answer: q3.answer, explanation: `${entry.title}은(는) ${related}와 함께 살펴보면 시대적 맥락을 파악하는 데 도움이 됩니다. 관련 개념을 눌러 자세한 내용을 확인해 보세요.` },
   ];
 }
 
