@@ -228,7 +228,7 @@ const trustedConceptSources = {
 
 function trustedSourceFor(entry: HistoryEntry) {
   const text = `${entry.title} ${entry.era} ${entry.type}`;
-  if (text.includes("\uBB38\uD654") || text.includes("\uC720\uC0B0") || text.includes("\uC720\uBB3C") || text.includes("\uC720\uC801")) return trustedConceptSources.museum;
+  if (text.includes("\uBB38\uD654") || text.includes("\uC720\uC0B0") || text.includes("\uC720\uBB3C") || text.includes("\uC720\uC801")) return { ...trustedConceptSources.museum, url: `https://www.emuseum.go.kr/m/imageSearch?query=${encodeURIComponent(entry.title)}` };
   if (text.includes("\uC77C\uC81C") || text.includes("\uADFC\uB300") || text.includes("\uB300\uD55C\uBBFC\uAD6D") || text.includes("6\u00B725")) return trustedConceptSources.archives;
   if (text.includes("\uC778\uBB3C") || text.includes("\uC655") || text.includes("\uC0AC\uAC74")) return { ...trustedConceptSources.encyclopedia, url: `https://encykorea.aks.ac.kr/Article/Search?query=${encodeURIComponent(entry.title)}` };
   return trustedConceptSources.history;
