@@ -5,11 +5,12 @@ import { historyEntries, type HistoryEntry } from "../data/history-data";
 import { lateHistoryEntries } from "../data/late-history-data";
 import { additionalSearchEntries } from "../data/additional-search-data";
 import { curriculumCoreEntries } from "../data/curriculum-core-data";
+import { conceptSupportEntries } from "../data/concept-support-data";
 import { LearningAccount } from "../components/LearningAccount";
 import { recordQuizAttempt } from "../lib/supabase-learning";
 
 const entryKey = (value: string) => value.toLowerCase().normalize("NFC").replace(/[^0-9a-z\uac00-\ud7a3]/g, "");
-const allEntries = [...historyEntries, ...lateHistoryEntries, ...additionalSearchEntries, ...curriculumCoreEntries]
+const allEntries = [...historyEntries, ...lateHistoryEntries, ...additionalSearchEntries, ...curriculumCoreEntries, ...conceptSupportEntries]
   .filter((entry, index, entries) => entries.findIndex((candidate) => entryKey(candidate.title) === entryKey(entry.title)) === index);
 const searchAliasMap: Record<string, string[]> = {
   "세종": ["세종대왕", "세종 대왕"],
@@ -154,7 +155,7 @@ function quizFor(entry: HistoryEntry): QuizQuestion[] {
 type ReferenceVisual = { terms: string[]; src: string; title: string; note: string };
 
 const referenceVisuals: ReferenceVisual[] = [
-  { terms: ["\uad6c\uc11d\uae30"], src: "/images/reference/ybm-history-05.jpg", title: "\uad6c\uc11d\uae30 \uc2dc\ub300 \uc0dd\ud65c", note: "\ub3cc\uc744 \ub5bc\uc5b4 \ub9cc\ub4e0 \ub3c4\uad6c\uc640 \uc774\ub3d9 \uc0dd\ud65c\uc744 \uc0b4\ud3b4\ubd10\uc694." },
+  { terms: ["\uad6c\uc11d\uae30", "\uc804\uace1\ub9ac", "\uc804\uace1\ub9ac \uc720\uc801"], src: "/images/reference/ybm-history-05.jpg", title: "\uad6c\uc11d\uae30 \uc2dc\ub300 \uc0dd\ud65c", note: "\ub3cc\uc744 \ub5bc\uc5b4 \ub9cc\ub4e0 \ub3c4\uad6c\uc640 \uc774\ub3d9 \uc0dd\ud65c\uc744 \uc0b4\ud3b4\ubd10\uc694." },
   { terms: ["\uc2e0\uc11d\uae30"], src: "/images/reference/ybm-history-07.jpg", title: "\uc2e0\uc11d\uae30 \uc2dc\ub300 \uc0dd\ud65c", note: "\uac04\uc11d\uae30\uc640 \ud1a0\uae30, \uc815\ucc29 \uc0dd\ud65c\uc744 \uc5f0\uacb0\ud574 \ubd10\uc694." },
   { terms: ["\uccad\ub3d9\uae30", "\uace0\uc778\ub3cc", "\ube44\ud30c\ud615"], src: "/images/reference/ybm-history-09.jpg", title: "\uccad\ub3d9\uae30 \uc2dc\ub300", note: "\ub18d\uc0ac\uc640 \uc0ac\ud68c\uc758 \ubcc0\ud654\ub97c \uadf8\ub9bc \uc18d \ub3c4\uad6c\uc5d0\uc11c \ucc3e\uc544\ubd10\uc694." },
   { terms: ["\uace0\uc870\uc120", "\ub2e8\uad70", "8\uc870\ubc95"], src: "/images/reference/ybm-history-13.jpg", title: "\uace0\uc870\uc120\uc758 \uac74\uad6d", note: "\uccad\ub3d9\uae30 \ubb38\ud654\uc640 \ucd5c\ucd08\uc758 \uad6d\uac00\ub97c \ud568\uaed8 \uc0dd\uac01\ud574 \ubd10\uc694." },

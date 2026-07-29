@@ -34,7 +34,11 @@ export const curriculumCoreEntries: HistoryEntry[] = allSeeds.map(({ title, sect
     summary: `${section.era}에 등장하거나 연결되는 핵심 개념이에요. ${title}의 뜻을 앞뒤 시대의 인물·사건·문화유산과 함께 살펴보면 역사 흐름을 이해하기 쉬워요.`,
     connection: `이 개념은 ${section.era}의 흐름 속에서 ${neighbors.join("·") || "앞뒤 사건"}과 연결해 기억해 보세요.`,
     related,
-    story: { before: `${section.era}에서 살펴볼 개념이에요.`, during: `${title}의 의미와 역할을 자료로 확인해 보세요.`, after: "다음 시대의 변화와 비교하면 역사 흐름이 더 선명해져요." },
+    story: [
+      { label: "시대·배경", value: `${section.era}에서 살펴볼 개념이에요.` },
+      { label: "핵심 내용", value: `${title}의 의미와 역할을 자료로 확인해 보세요.` },
+      { label: "연결", value: "다음 시대의 변화와 비교하면 역사 흐름이 더 선명해져요." },
+    ],
     prompt: `${title}을(를) ${section.era}의 다른 개념과 연결하여 한두 문장으로 설명해 보세요.`,
     keywords: [title, normalize(title), section.era, ...neighbors]
   };
