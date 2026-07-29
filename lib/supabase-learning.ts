@@ -82,17 +82,94 @@ export async function signIn(learningId: string, password: string) {
 async function ensureProfile(session: LearningSession, learningId: string) {
   await request("/rest/v1/learning_profiles?on_conflict=user_id", {
     method: "POST",
-    headers: { Authorization: `Bearer ${session.access_token}`, Prefer: "resolution=merge-duplicates" },
+    headers: { Authorization: `Bearer ${session.access_token}`, Prefer: "resolution=ignore-duplicates" },
     body: JSON.stringify({ user_id: session.user.id, learning_id: learningId.trim() }),
   });
+}
+
+export type LearningProfile = { user_id: string; learning_id: string; role: "student" | "teacher" };
+export type Classroom = { id: string; class_code: string; teacher_id: string };
+export type ClassMembership = { user_id: string; classroom_id: string; learning_id: string; joined_at: string };
+export type LearningRecord = { user_id: string; classroom_id: string | null; concept_title: string; quiz_number: number; is_correct: boolean; created_at: string };
+
+async function jsonOrError(response: Response) {
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message ?? data.msg ?? data.error_description ?? "REQUEST_FAILED");
+  return data;
+}
+
+function activeSession() {
+  const session = savedSession();
+  if (!session) throw new Error("LOGIN_REQUIRED");
+  return session;
+}
+
+export async function getLearningProfile(session = activeSession()): Promise<LearningProfile | null> {
+  const response = await request(`/rest/v1/learning_profiles?user_id=eq.${session.user.id}&select=user_id,learning_id,role`, {
+    headers: { Authorization: `Bearer ${session.access_token}` },
+  });
+  const data = await jsonOrError(response) as LearningProfile[];
+  return data[0] ?? null;
+}
+
+export async function joinClassByCode(classCode: string) {
+  const session = activeSession();
+  const response = await request("/rest/v1/rpc/join_class", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${session.access_token}` },
+    body: JSON.stringify({ p_class_code: classCode.trim() }),
+  });
+  return jsonOrError(response) as Promise<string>;
+}
+
+export async function createTeacherClassroom(classCode: string, teacherCode: string) {
+  const session = activeSession();
+  const response = await request("/rest/v1/rpc/create_teacher_classroom", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${session.access_token}` },
+    body: JSON.stringify({ p_class_code: classCode.trim(), p_teacher_code: teacherCode.trim() }),
+  });
+  return jsonOrError(response) as Promise<string>;
+}
+
+export async function teacherClassrooms() {
+  const session = activeSession();
+  const response = await request(`/rest/v1/classrooms?teacher_id=eq.${session.user.id}&select=id,class_code,teacher_id&order=created_at.desc`, {
+    headers: { Authorization: `Bearer ${session.access_token}` },
+  });
+  return jsonOrError(response) as Promise<Classroom[]>;
+}
+
+export async function classroomMembers(classroomId: string) {
+  const session = activeSession();
+  const response = await request(`/rest/v1/class_memberships?classroom_id=eq.${classroomId}&select=user_id,classroom_id,learning_id,joined_at&order=joined_at`, {
+    headers: { Authorization: `Bearer ${session.access_token}` },
+  });
+  return jsonOrError(response) as Promise<ClassMembership[]>;
+}
+
+export async function classroomRecords(classroomId: string) {
+  const session = activeSession();
+  const response = await request(`/rest/v1/learning_records?classroom_id=eq.${classroomId}&select=user_id,classroom_id,concept_title,quiz_number,is_correct,created_at&order=created_at.desc`, {
+    headers: { Authorization: `Bearer ${session.access_token}` },
+  });
+  return jsonOrError(response) as Promise<LearningRecord[]>;
 }
 
 export async function recordQuizAttempt(conceptTitle: string, quizNumber: number, isCorrect: boolean, selectedOption: string) {
   const session = savedSession();
   if (!session) return;
+  let classroomId: string | null = null;
+  try {
+    const response = await request(`/rest/v1/class_memberships?user_id=eq.${session.user.id}&select=classroom_id&limit=1`, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    const memberships = await jsonOrError(response) as { classroom_id: string }[];
+    classroomId = memberships[0]?.classroom_id ?? null;
+  } catch { /* A student can use the app before joining a class. */ }
   await request("/rest/v1/learning_records", {
     method: "POST",
     headers: { Authorization: `Bearer ${session.access_token}` },
-    body: JSON.stringify({ user_id: session.user.id, concept_title: conceptTitle, quiz_number: quizNumber, is_correct: isCorrect, selected_option: selectedOption }),
+    body: JSON.stringify({ user_id: session.user.id, concept_title: conceptTitle, quiz_number: quizNumber, is_correct: isCorrect, selected_option: selectedOption, ...(classroomId ? { classroom_id: classroomId } : {}) }),
   });
 }
