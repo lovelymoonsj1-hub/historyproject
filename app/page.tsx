@@ -180,6 +180,8 @@ const preferredVisualByTitle: Record<string, string> = {
   "\uace0\ub824": "/images/reference/ybm-history-39.jpg",
   "\uc5ec\uc9c4": "/images/reference/ybm-history-41.jpg",
   "\uae08\uc18d \ud65c\uc790": "/images/reference/ybm-history-52.jpg",
+  "\ub550\uc11d\uae30": "/images/reference/ybm-history-05.jpg",
+  "\uc8fc\uba39\ub3c4\ub07c": "/images/reference/ybm-history-05.jpg",
 };
 
 function referenceVisualFor(entry: HistoryEntry) {
