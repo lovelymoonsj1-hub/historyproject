@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 680" role="img" aria-labelledby="title desc">
+  <title id="title">한국사 주요 지리 개념과 주변 세력 학습 지도</title>
+  <desc id="desc">한반도와 주변 지역에 위화도, 강화도, 삼별초, 한강 유역, 벽란도, 청해진, 동북 9성 및 주변 국가와 세력의 위치를 표시한 개략도</desc>
+  <rect width="1100" height="680" fill="#e8f3f3"/>
+  <path d="M80 115 C190 62 304 82 365 151 C421 215 435 276 486 334 C532 385 589 425 609 496 C622 545 591 594 540 624 L414 631 C356 590 311 542 265 488 C207 420 146 350 112 273 C89 222 74 164 80 115Z" fill="#fff4df" stroke="#6e9f98" stroke-width="5"/>
+  <path d="M650 71 C781 34 959 83 1045 186 L1045 578 L675 578 C722 509 758 443 805 373 C850 306 863 237 817 182 C776 132 714 108 650 71Z" fill="#f6e8cf" stroke="#c89c6e" stroke-width="4"/>
+  <path d="M615 102 C676 76 751 90 795 137 C836 180 841 236 814 286 C785 340 741 387 703 437" fill="none" stroke="#d1a36c" stroke-width="8"/>
+  <path d="M615 102 C676 76 751 90 795 137 C836 180 841 236 814 286 C785 340 741 387 703 437" fill="none" stroke="#fff4df" stroke-width="3"/>
+  <text x="858" y="78" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="#9b6341">중국 대륙</text>
+  <text x="844" y="111" font-family="Arial, sans-serif" font-size="18" fill="#6a716f">한 · 진 · 당 · 송 · 원 · 명 · 청</text>
+  <text x="70" y="80" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#397e79">한국사 지리 탐험 지도</text>
+  <text x="70" y="650" font-family="Arial, sans-serif" font-size="17" fill="#5e716f">※ 위치는 초등 학습을 위한 개략도이며, 시대별 국경과 성의 정확한 위치에는 학설 차이가 있습니다.</text>
+  <g font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#41382e">
+    <text x="450" y="150">발해</text><text x="720" y="145">거란(요)</text><text x="735" y="210">여진(금·후금)</text><text x="929" y="190">일본</text>
+  </g>
+  <g fill="#d97952" stroke="#fff" stroke-width="4">
+    <circle cx="278" cy="209" r="12"/><circle cx="332" cy="258" r="12"/><circle cx="368" cy="305" r="12"/>
+    <circle cx="378" cy="355" r="12"/><circle cx="350" cy="413" r="12"/><circle cx="314" cy="469" r="12"/>
+  </g>
+  <g font-family="Arial, sans-serif" font-size="17" fill="#a95036" font-weight="700">
+    <text x="232" y="196">동북 9성</text><text x="286" y="249">위화도</text><text x="384" y="300">한강 유역</text>
+    <text x="392" y="353">벽란도</text><text x="364" y="432">강화도</text><text x="327" y="495">삼별초</text><text x="204" y="466">청해진</text>
+  </g>
+  <g fill="#57958f" stroke="#fff" stroke-width="4">
+    <circle cx="220" cy="451" r="10"/><circle cx="349" cy="440" r="10"/><circle cx="311" cy="478" r="10"/>
+  </g>
+  <path d="M340 259 C420 214 488 172 574 142" fill="none" stroke="#57958f" stroke-width="3" stroke-dasharray="9 8"/>
+  <path d="M315 479 C420 521 503 525 589 488" fill="none" stroke="#d97952" stroke-width="3" stroke-dasharray="9 8"/>
+  <rect x="630" y="475" width="395" height="94" rx="18" fill="#fffaf1" stroke="#dfc49d" stroke-width="3"/>
+  <text x="652" y="508" font-family="Arial, sans-serif" font-size="19" font-weight="700" fill="#397e79">관계로 읽는 역사</text>
+  <text x="652" y="538" font-family="Arial, sans-serif" font-size="16" fill="#5e716f">교류·침입·항쟁·무역이 위치와 함께 이어져요.</text>
+</svg>
