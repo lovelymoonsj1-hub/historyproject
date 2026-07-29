@@ -7,6 +7,16 @@ export type LearningSession = {
   user: { id: string; email?: string | null; user_metadata?: { learning_id?: string } };
 };
 
+const teacherIdPattern = /^[a-z]{4,8}\d{2}master$/i;
+const studentIdPattern = /^[a-z]{4,8}\d{4}$/i;
+
+export function accountKind(learningId: string): "teacher" | "student" | null {
+  const value = learningId.trim();
+  if (teacherIdPattern.test(value)) return "teacher";
+  if (studentIdPattern.test(value)) return "student";
+  return null;
+}
+
 function learningEmail(learningId: string) {
   // Supabase email sign-in needs an ASCII email address. Turn every learning ID
   // (including Korean text) into a stable internal-only identifier first.
@@ -50,6 +60,8 @@ export function clearSession() {
 }
 
 export async function signUp(learningId: string, password: string) {
+  const kind = accountKind(learningId);
+  if (!kind) throw new Error("ID_FORMAT_INVALID");
   const response = await request("/auth/v1/signup", {
     method: "POST",
     body: JSON.stringify({ email: learningEmail(learningId), password, data: { learning_id: learningId.trim() } }),
@@ -61,6 +73,7 @@ export async function signUp(learningId: string, password: string) {
   if (session) {
     window.localStorage.setItem(sessionKey, JSON.stringify(session));
     await ensureProfile(session, learningId);
+    await assignAccountToClass(session, learningId, kind);
   }
   return session;
 }
@@ -76,6 +89,8 @@ export async function signIn(learningId: string, password: string) {
   const session = sessionFrom(data);
   if (!session) throw new Error("\uB85C\uADF8\uC778 \uC815\uBCF4\uB97C \uBC1B\uC9C0 \uBABB\uD588\uC5B4\uC694. \uB2E4\uC2DC \uC2DC\uB3C4\uD574 \uC8FC\uC138\uC694.");
   window.localStorage.setItem(sessionKey, JSON.stringify(session));
+  const kind = accountKind(learningId);
+  if (kind === "student") await assignAccountToClass(session, learningId, kind);
   return session;
 }
 
@@ -128,6 +143,16 @@ export async function createTeacherClassroom(classCode: string, teacherCode: str
     method: "POST",
     headers: { Authorization: `Bearer ${session.access_token}` },
     body: JSON.stringify({ p_class_code: classCode.trim(), p_teacher_code: teacherCode.trim() }),
+  });
+  return jsonOrError(response) as Promise<string>;
+}
+
+async function assignAccountToClass(session: LearningSession, learningId: string, kind: "teacher" | "student") {
+  const path = kind === "teacher" ? "register_teacher_account" : "auto_join_student_class";
+  const response = await request(`/rest/v1/rpc/${path}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${session.access_token}` },
+    body: JSON.stringify({ p_learning_id: learningId.trim() }),
   });
   return jsonOrError(response) as Promise<string>;
 }

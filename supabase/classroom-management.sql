@@ -1,6 +1,5 @@
 -- Run this once in Supabase SQL Editor after learning-records.sql.
--- Create a one-time teacher registration code before a teacher creates a class:
--- insert into public.teacher_registration_codes (code) values ('TEACHER-2026');
+-- Teacher and student accounts are automatically matched by their ID prefix.
 
 alter table public.learning_profiles
   add column if not exists role text not null default 'student'
@@ -115,3 +114,64 @@ grant select on public.classrooms, public.class_memberships to authenticated;
 grant select, insert on public.learning_records to authenticated;
 grant execute on function public.join_class(text) to authenticated;
 grant execute on function public.create_teacher_classroom(text, text) to authenticated;
+
+-- Automatic account matching
+-- Teacher ID: alphabet 4-8 letters + class number 2 digits + master (example: jaun51master)
+-- Student ID: the same first part + student number 2 digits (example: jaun5100)
+create or replace function public.register_teacher_account(p_learning_id text)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_class_code text;
+  v_classroom_id uuid;
+  v_profile_id text;
+begin
+  if lower(trim(p_learning_id)) !~ '^[a-z]{4,8}[0-9]{2}master$' then
+    raise exception 'TEACHER_ID_FORMAT_INVALID';
+  end if;
+  select learning_id into v_profile_id from public.learning_profiles where user_id = auth.uid();
+  if lower(v_profile_id) <> lower(trim(p_learning_id)) then raise exception 'PROFILE_MISMATCH'; end if;
+  v_class_code := substring(lower(trim(p_learning_id)) from '^([a-z]{4,8}[0-9]{2})master$');
+  select id into v_classroom_id from public.classrooms where class_code = v_class_code;
+  if v_classroom_id is not null and not exists (
+    select 1 from public.classrooms where id = v_classroom_id and teacher_id = auth.uid()
+  ) then raise exception 'CLASS_CODE_IN_USE'; end if;
+  update public.learning_profiles set role = 'teacher' where user_id = auth.uid();
+  if v_classroom_id is null then
+    insert into public.classrooms(teacher_id, class_code) values (auth.uid(), v_class_code) returning id into v_classroom_id;
+  end if;
+  return v_classroom_id;
+end;
+$$;
+
+create or replace function public.auto_join_student_class(p_learning_id text)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_class_code text;
+  v_classroom_id uuid;
+  v_profile_id text;
+begin
+  if lower(trim(p_learning_id)) !~ '^[a-z]{4,8}[0-9]{4}$' then
+    raise exception 'STUDENT_ID_FORMAT_INVALID';
+  end if;
+  select learning_id into v_profile_id from public.learning_profiles where user_id = auth.uid();
+  if lower(v_profile_id) <> lower(trim(p_learning_id)) then raise exception 'PROFILE_MISMATCH'; end if;
+  v_class_code := substring(lower(trim(p_learning_id)) from '^([a-z]{4,8}[0-9]{2})[0-9]{2}$');
+  select id into v_classroom_id from public.classrooms where class_code = v_class_code;
+  if v_classroom_id is null then raise exception 'TEACHER_ACCOUNT_NOT_READY'; end if;
+  insert into public.class_memberships(user_id, classroom_id, learning_id)
+  values (auth.uid(), v_classroom_id, v_profile_id)
+  on conflict (user_id) do update set classroom_id = excluded.classroom_id, learning_id = excluded.learning_id, joined_at = now();
+  return v_classroom_id;
+end;
+$$;
+
+grant execute on function public.register_teacher_account(text) to authenticated;
+grant execute on function public.auto_join_student_class(text) to authenticated;
