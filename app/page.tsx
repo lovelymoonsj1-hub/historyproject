@@ -24,9 +24,31 @@ const searchAliasMap: Record<string, string[]> = {
 const t = {
   app:"\uC5ED\uC8FC\uD589", sub:"\uC5ED\uC0AC\uB97C \uC8FC\uB3C4\uD558\uB294 \uC2DC\uAC04 \uC5EC\uD589", search:"\uAD81\uAE08\uD55C \uC778\uBB3C\u00B7\uC0AC\uAC74\u00B7\uBB38\uD654\uC720\uC0B0\uC744 \uAC80\uC0C9\uD574 \uBCF4\uC138\uC694", result:"\uAC80\uC0C9 \uACB0\uACFC", detail:"\uC5ED\uC0AC \uB9E5\uB77D \uC0C1\uC138 \uD654\uBA74", related:"\uD568\uAED8 \uC5F0\uACB0\uD574 \uBCF4\uC138\uC694", flow:"\uC774\uB7F0 \uD750\uB984\uC73C\uB85C \uC0DD\uAC01\uD574\uC694", beforeAfter:"\uC2DC\uAC04\uC758 \uD750\uB984", noResult:"\uAC80\uC0C9 \uACB0\uACFC\uAC00 \uC5C6\uC5B4\uC694.", hint:"\uC608: \uACE0\uB824, 1019, \uC784\uC9C4\uC65C\uB780, \uD6C8\uBBFC\uC815\uC74C", write:"\uD55C\uB450 \uBB38\uC7A5\uC73C\uB85C \uC815\uB9AC\uD574 \uBCF4\uC138\uC694", prompt:"\uC0DD\uAC01 \uD655\uC778", older:"\uC774\uC804 \uD750\uB984", later:"\uB2E4\uC74C \uD750\uB984", home:"\uD0C0\uC784\uB77C\uC778 \uD0D0\uC0C9" };
 
-function normalize(value: string) { return value.toLowerCase().normalize("NFC").replace(/[^0-9a-z가-힣]/g, ""); }
+function normalize(value: string) { return value.toLowerCase().normalize("NFC").replace(/[^0-9a-z\uac00-\ud7a3]/g, ""); }
 function searchableText(entry: HistoryEntry) { return [entry.title, entry.type, entry.era, entry.years, entry.summary, entry.connection, ...entry.keywords, ...entry.related.flatMap((item) => [item.label, item.query]), ...(searchAliasMap[entry.title] ?? [])].join(" "); }
-function matchScore(entry: HistoryEntry, term: string) { const title = normalize(entry.title); const text = normalize(searchableText(entry)); if (title === term) return 0; if (title.includes(term)) return 1; if (text.includes(term)) return 2; return 3; }
+const particleEnding = /(?:\uC5D0\uC11C|\uC5D0\uAC8C|\uAE4C\uC9C0|\uBD80\uD130|\uC73C\uB85C|\uC774\uB77C\uBA74|\uB77C\uBA74|\uC740\uB370|\uB294\uB370|\uC740|\uB294|\uC774|\uAC00|\uC744|\uB97C|\uC758|\uC5D0|\uC640|\uACFC|\uB3C4|\uB9CC|\uB85C|\uC694)$/;
+function queryTerms(value: string) {
+  const full = normalize(value);
+  const words = value.toLowerCase().normalize("NFC").match(/[0-9a-z\uac00-\ud7a3]+/g) ?? [];
+  const terms = words.flatMap((word) => {
+    const normalized = normalize(word);
+    const stem = normalized.replace(particleEnding, "");
+    return [normalized, stem].filter((term) => term.length >= 2);
+  });
+  return [...new Set([full, ...terms.filter((term) => term !== full)])];
+}
+function searchScore(entry: HistoryEntry, value: string) {
+  const full = normalize(value);
+  const title = normalize(entry.title);
+  const text = normalize(searchableText(entry));
+  if (title === full) return 10000;
+  if (title.includes(full)) return 9000;
+  if (text.includes(full)) return 8000;
+  const matches = queryTerms(value).filter((term) => text.includes(term));
+  if (!matches.length) return -1;
+  const titleHits = matches.filter((term) => title.includes(term)).length;
+  return titleHits * 100 + matches.reduce((total, term) => total + term.length, 0);
+}
 function yearOf(entry: HistoryEntry) { const found = entry.years.match(/\d{1,4}/); return found ? Number(found[0]) : 0; }
 type QuizQuestion = { question: string; options: string[]; answer: number; explanation: string };
 function legacyQuizFor(entry: HistoryEntry): QuizQuestion[] {
@@ -71,9 +93,12 @@ export default function Home() {
   const [learningMode, setLearningMode] = useState<"deep" | "support" | null>(null);
   const selected = allEntries.find((entry) => entry.title === selectedId) ?? allEntries[0];
   const results = useMemo(() => {
-    const term = normalize(query);
-    if (!term) return [];
-    return allEntries.filter((entry) => normalize(searchableText(entry)).includes(term)).sort((a, b) => matchScore(a, term) - matchScore(b, term));
+    if (!normalize(query)) return [];
+    return allEntries
+      .map((entry) => ({ entry, score: searchScore(entry, query) }))
+      .filter(({ score }) => score >= 0)
+      .sort((a, b) => b.score - a.score)
+      .map(({ entry }) => entry);
   }, [query]);
   const suggestions = results.slice(0, 5);
   const ordered = useMemo(() => [...allEntries].sort((a,b) => yearOf(a) - yearOf(b)), []);
