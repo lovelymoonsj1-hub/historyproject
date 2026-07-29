@@ -190,17 +190,19 @@ const preferredVisualByTitle: Record<string, string> = {
 };
 
 function referenceVisualFor(entry: HistoryEntry) {
-  const entryText = `${entry.title} ${entry.era} ${entry.keywords.join(" ")}`;
   const preferredSrc = preferredVisualByTitle[entry.title];
   if (preferredSrc) return referenceVisuals.find((visual) => visual.src === preferredSrc);
-  const title = entry.title;
-  const keywords = entry.keywords;
+  // Visuals must be attached only through an explicit concept title/keyword.
+  // Do not use substring matching here: broad words such as "강화도", "신라"
+  // or "고려" can otherwise make an unrelated textbook scene win the match.
+  const normalized = (value: string) => entryKey(value);
+  const title = normalized(entry.title);
+  const keywords = entry.keywords.map(normalized);
   const score = (visual: ReferenceVisual) => visual.terms.reduce((total, term) => {
     if (term.length < 2) return total;
-    if (title === term) return total + 10000 + term.length;
-    if (title.includes(term)) return total + 1000 + term.length;
-    if (keywords.some((keyword) => keyword === term)) return total + 500 + term.length;
-    if (entry.era.includes(term)) return total + 1;
+    const concept = normalized(term);
+    if (title === concept) return total + 10000 + concept.length;
+    if (keywords.includes(concept)) return total + 500 + concept.length;
     return total;
   }, 0);
   return referenceVisuals.map((visual) => ({ visual, score: score(visual) })).filter((item) => item.score > 0).sort((a, b) => b.score - a.score)[0]?.visual;
