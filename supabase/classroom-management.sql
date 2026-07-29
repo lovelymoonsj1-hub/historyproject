@@ -36,6 +36,12 @@ alter table public.class_memberships enable row level security;
 drop policy if exists "students manage own learning profile" on public.learning_profiles;
 drop policy if exists "students read own learning records" on public.learning_records;
 drop policy if exists "students add own learning records" on public.learning_records;
+drop policy if exists "users read own profile" on public.learning_profiles;
+drop policy if exists "users create own profile" on public.learning_profiles;
+drop policy if exists "teachers read own classrooms" on public.classrooms;
+drop policy if exists "users read own membership" on public.class_memberships;
+drop policy if exists "users read own records or teacher records" on public.learning_records;
+drop policy if exists "students add own records" on public.learning_records;
 
 create policy "users read own profile" on public.learning_profiles
   for select to authenticated using ((select auth.uid()) = user_id);
