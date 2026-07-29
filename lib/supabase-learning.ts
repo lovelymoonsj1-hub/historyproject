@@ -1,6 +1,7 @@
 const supabaseUrl = "https://bchmoqgkespahyjkzkxb.supabase.co";
 const publishableKey = "sb_publishable_Fg-P-6yk0XChZZ3qkWV8mg_IEc1gBKx";
 const sessionKey = "yeokjuhang-supabase-session";
+const assignmentPendingKey = "yeokjuhang-class-assignment-pending";
 
 export type LearningSession = {
   access_token: string;
@@ -73,7 +74,7 @@ export async function signUp(learningId: string, password: string) {
   if (session) {
     window.localStorage.setItem(sessionKey, JSON.stringify(session));
     await ensureProfile(session, learningId);
-    await assignAccountToClass(session, learningId, kind);
+    await tryAssignAccountToClass(session, learningId, kind);
   }
   return session;
 }
@@ -90,7 +91,7 @@ export async function signIn(learningId: string, password: string) {
   if (!session) throw new Error("\uB85C\uADF8\uC778 \uC815\uBCF4\uB97C \uBC1B\uC9C0 \uBABB\uD588\uC5B4\uC694. \uB2E4\uC2DC \uC2DC\uB3C4\uD574 \uC8FC\uC138\uC694.");
   window.localStorage.setItem(sessionKey, JSON.stringify(session));
   const kind = accountKind(learningId);
-  if (kind === "student") await assignAccountToClass(session, learningId, kind);
+  if (kind) await tryAssignAccountToClass(session, learningId, kind);
   return session;
 }
 
@@ -155,6 +156,17 @@ async function assignAccountToClass(session: LearningSession, learningId: string
     body: JSON.stringify({ p_learning_id: learningId.trim() }),
   });
   return jsonOrError(response) as Promise<string>;
+}
+
+async function tryAssignAccountToClass(session: LearningSession, learningId: string, kind: "teacher" | "student") {
+  try {
+    await assignAccountToClass(session, learningId, kind);
+    if (typeof window !== "undefined") window.localStorage.removeItem(assignmentPendingKey);
+  } catch {
+    // Auth account creation must not be reported as a failure when the class
+    // assignment is still waiting for a teacher account or database update.
+    if (typeof window !== "undefined") window.localStorage.setItem(assignmentPendingKey, "true");
+  }
 }
 
 export async function teacherClassrooms() {
