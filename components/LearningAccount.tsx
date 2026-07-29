@@ -22,7 +22,12 @@ export function LearningAccount() {
     try {
       const next = mode === "signin" ? await signIn(learningId, password) : await signUp(learningId, password);
       if (!next) {
-        setMessage("가입 확인이 필요해요. 선생님이 이메일 확인 설정을 꺼 주면 바로 로그인할 수 있어요.");
+        try {
+          const existing = await signIn(learningId, password);
+          setSession(existing); setOpen(false); setPassword("");
+          return;
+        } catch { /* An unconfirmed earlier account needs to be recreated. */ }
+        setMessage("이미 만들었던 학습 ID일 수 있어요. 로그인 탭에서 다시 시도하거나, 이메일 확인 설정 전 만든 ID라면 Supabase의 Authentication → Users에서 삭제한 뒤 새로 만들어 주세요.");
       } else {
         setSession(next); setOpen(false); setPassword("");
       }
