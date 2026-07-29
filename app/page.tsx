@@ -72,6 +72,7 @@ export default function Home() {
     if (!term) return [];
     return allEntries.filter((entry) => normalize(searchableText(entry)).includes(term));
   }, [query]);
+  const suggestions = results.slice(0, 5);
   const ordered = useMemo(() => [...allEntries].sort((a,b) => yearOf(a) - yearOf(b)), []);
   const currentIndex = ordered.findIndex((entry) => entry.title === selected.title);
   const nearby = ordered.filter((_, index) => index >= Math.max(0,currentIndex-2) && index <= Math.min(ordered.length-1,currentIndex+2));
@@ -84,6 +85,7 @@ export default function Home() {
   const retryQuiz = () => { setQuizChoice(null); setQuizFeedback(null); };
 
   return <main className="min-h-screen bg-[#fbf3e4] text-[#41382e]">
+    {query && suggestions.length > 0 && <div className="fixed right-5 top-[4.5rem] z-40 w-[min(47vw,440px)] overflow-hidden rounded-2xl border border-[#e0c9a8] bg-white p-2 shadow-lg md:right-12" role="listbox" aria-label="검색어 자동완성">{suggestions.map((entry)=><button type="button" role="option" key={`suggest-${entry.title}`} onClick={()=>select(entry)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left hover:bg-[#fff3df]"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#eaf5ed] text-sm font-black text-[#57958f]">↗</span><span className="min-w-0"><b className="block truncate text-sm">{entry.title}</b><small className="block truncate text-xs text-stone-500">{entry.era} · {entry.type}</small></span></button>)}</div>}
     <header className="sticky top-0 z-30 flex items-center justify-between border-b border-[#ead5b8] bg-[#fff9ef]/95 px-5 py-3 backdrop-blur md:px-12"><div><b className="text-2xl tracking-tight text-[#d2744d]">{t.app}</b><span className="ml-2 text-xs text-stone-500">{t.sub}</span></div><label className="relative w-[min(47vw,440px)]"><span className="absolute left-3 top-2 text-lg text-[#57958f]">⌕</span><input className="w-full rounded-full border border-[#e0c9a8] bg-white px-9 py-2 text-sm outline-none focus:border-[#57958f]" value={query} onChange={(event)=>setQuery(event.target.value)} placeholder={t.search} aria-label={t.search}/></label></header>
     <section className="mx-auto max-w-6xl px-5 py-9 md:px-10"><p className="text-xs font-bold text-[#d2744d]">{t.home}</p><h1 className="mt-2 text-4xl font-black tracking-tight md:text-5xl">{selected.title}</h1><p className="mt-2 text-stone-500">{selected.era} · {selected.years}</p>
       {query && <section className="mt-5 rounded-3xl border border-[#e6d0b1] bg-white p-5"><h2 className="font-bold">{t.result} <span className="text-[#d2744d]">{results.length}</span></h2>{results.length ? <div className="mt-3 grid gap-2 md:grid-cols-2">{results.map((entry)=><button className="rounded-2xl bg-[#fff5e5] p-4 text-left hover:bg-[#e8f3ed]" key={entry.title} onClick={()=>select(entry)}><small className="text-[#57958f]">{entry.era} · {entry.type}</small><b className="ml-2">{entry.title}</b><p className="mt-2 text-xs text-stone-600">{entry.summary}</p></button>)}</div> : <p className="mt-3 text-sm text-stone-600">{t.noResult} {t.hint}</p>}</section>}
