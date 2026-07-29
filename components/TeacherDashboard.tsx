@@ -8,6 +8,7 @@ import {
   savedSession,
   signIn,
   signUp,
+  syncTeacherClassMembers,
   teacherClassrooms,
   type ClassMembership,
   type Classroom,
@@ -34,6 +35,7 @@ export default function TeacherDashboard() {
   const [password, setPassword] = useState("");
 
   const loadClasses = async () => {
+    try { await syncTeacherClassMembers(); } catch { /* The dashboard still works before a sync is available. */ }
     const nextClasses = await teacherClassrooms();
     setClasses(nextClasses);
     setClassroomId((current) => current || nextClasses[0]?.id || "");

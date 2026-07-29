@@ -177,6 +177,16 @@ export async function teacherClassrooms() {
   return jsonOrError(response) as Promise<Classroom[]>;
 }
 
+export async function syncTeacherClassMembers() {
+  const session = activeSession();
+  const response = await request("/rest/v1/rpc/sync_teacher_class_members", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${session.access_token}` },
+    body: JSON.stringify({}),
+  });
+  return jsonOrError(response) as Promise<number>;
+}
+
 export async function classroomMembers(classroomId: string) {
   const session = activeSession();
   const response = await request(`/rest/v1/class_memberships?classroom_id=eq.${classroomId}&select=user_id,classroom_id,learning_id,joined_at&order=joined_at`, {

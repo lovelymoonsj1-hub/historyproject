@@ -179,5 +179,41 @@ begin
 end;
 $$;
 
+-- When a teacher opens the dashboard, connect any students who created their
+-- matching IDs before the teacher account existed, and attach their old records.
+create or replace function public.sync_teacher_class_members()
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_classroom record;
+  v_added integer := 0;
+  v_count integer;
+begin
+  for v_classroom in select id, class_code from public.classrooms where teacher_id = auth.uid() loop
+    insert into public.class_memberships(user_id, classroom_id, learning_id)
+    select p.user_id, v_classroom.id, p.learning_id
+    from public.learning_profiles p
+    where p.role = 'student'
+      and lower(p.learning_id) ~ ('^' || v_classroom.class_code || '[0-9]{2}$')
+    on conflict (user_id) do update
+      set classroom_id = excluded.classroom_id, learning_id = excluded.learning_id, joined_at = now();
+    get diagnostics v_count = row_count;
+    v_added := v_added + v_count;
+
+    update public.learning_records r
+    set classroom_id = v_classroom.id
+    from public.class_memberships m
+    where m.user_id = r.user_id
+      and m.classroom_id = v_classroom.id
+      and r.classroom_id is null;
+  end loop;
+  return v_added;
+end;
+$$;
+
 grant execute on function public.register_teacher_account(text) to authenticated;
 grant execute on function public.auto_join_student_class(text) to authenticated;
+grant execute on function public.sync_teacher_class_members() to authenticated;
