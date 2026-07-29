@@ -149,6 +149,17 @@ begin
   if v_classroom_id is null then
     insert into public.classrooms(teacher_id, class_code) values (auth.uid(), v_class_code) returning id into v_classroom_id;
   end if;
+  -- Students may have created matching IDs before this teacher account.
+  insert into public.class_memberships(user_id, classroom_id, learning_id)
+  select p.user_id, v_classroom_id, p.learning_id
+  from public.learning_profiles p
+  where p.role = 'student' and lower(p.learning_id) ~ ('^' || v_class_code || '[0-9]{2}$')
+  on conflict (user_id) do update
+    set classroom_id = excluded.classroom_id, learning_id = excluded.learning_id, joined_at = now();
+  update public.learning_records r
+  set classroom_id = v_classroom_id
+  from public.class_memberships m
+  where m.user_id = r.user_id and m.classroom_id = v_classroom_id and r.classroom_id is null;
   return v_classroom_id;
 end;
 $$;
@@ -213,6 +224,35 @@ begin
   return v_added;
 end;
 $$;
+
+-- Students created after a teacher are connected immediately at account creation.
+create or replace function public.auto_assign_new_student_profile()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_class_code text;
+  v_classroom_id uuid;
+begin
+  if lower(new.learning_id) !~ '^[a-z]{4,8}[0-9]{4}$' then return new; end if;
+  v_class_code := substring(lower(new.learning_id) from '^([a-z]{4,8}[0-9]{2})[0-9]{2}$');
+  select id into v_classroom_id from public.classrooms where class_code = v_class_code;
+  if v_classroom_id is not null then
+    insert into public.class_memberships(user_id, classroom_id, learning_id)
+    values (new.user_id, v_classroom_id, new.learning_id)
+    on conflict (user_id) do update
+      set classroom_id = excluded.classroom_id, learning_id = excluded.learning_id, joined_at = now();
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists auto_assign_new_student_profile_trigger on public.learning_profiles;
+create trigger auto_assign_new_student_profile_trigger
+  after insert on public.learning_profiles
+  for each row execute function public.auto_assign_new_student_profile();
 
 grant execute on function public.register_teacher_account(text) to authenticated;
 grant execute on function public.auto_join_student_class(text) to authenticated;
