@@ -51,7 +51,46 @@ function searchScore(entry: HistoryEntry, value: string) {
   const titleHits = matches.filter((term) => title.includes(term)).length;
   return titleHits * 100 + matches.reduce((total, term) => total + term.length, 0);
 }
-function yearOf(entry: HistoryEntry) { const found = entry.years.match(/\d{1,4}/); return found ? Number(found[0]) : 0; }
+const eraStartYear: Record<string, number> = {
+  "선사 시대": -700000,
+  "고대 국가의 시작": -500,
+  "여러 나라": -108,
+  "삼국 시대": -57,
+  "남북국 시대": 676,
+  "통일 신라": 676,
+  "통일 신라 말": 850,
+  "고려 시대": 918,
+  "조선 시대": 1392,
+  "조선 전기": 1392,
+  "조선 중기": 1592,
+  "조선 후기": 1636,
+  "근대": 1876,
+  "일제 강점기": 1910,
+  "근현대": 1945,
+  "대한민국 정부 수립 이후": 1948,
+};
+
+function yearOf(entry: HistoryEntry) {
+  const years = entry.years.replace(/\s/g, "");
+  const tenThousandYearsAgo = years.match(/(\d+)만년전/);
+  if (tenThousandYearsAgo) return -Number(tenThousandYearsAgo[1]) * 10000;
+
+  const bceCentury = years.match(/기원전(?:약)?(\d+)세기/);
+  if (bceCentury) return -Number(bceCentury[1]) * 100;
+  const bceYear = years.match(/기원전(?:약)?(\d{1,4})년?/);
+  if (bceYear) return -Number(bceYear[1]);
+
+  const centuryRange = years.match(/(\d+)(?:~|-)\d+세기/);
+  if (centuryRange) return (Number(centuryRange[1]) - 1) * 100;
+  const century = years.match(/(\d+)세기/);
+  if (century) return (Number(century[1]) - 1) * 100;
+
+  const year = years.match(/\d{1,4}/);
+  if (year) return Number(year[0]);
+
+  const eraMatch = Object.entries(eraStartYear).find(([era]) => entry.era.includes(era));
+  return eraMatch?.[1] ?? 0;
+}
 type QuizQuestion = { question: string; options: string[]; answer: number; explanation: string; optionNotes?: string[] };
 function legacyQuizFor(entry: HistoryEntry): QuizQuestion[] {
   const related = entry.related[0]?.label ?? "관련 개념";
