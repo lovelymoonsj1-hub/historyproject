@@ -2,10 +2,13 @@ const supabaseUrl = "https://bchmoqgkespahyjkzkxb.supabase.co";
 const publishableKey = "sb_publishable_Fg-P-6yk0XChZZ3qkWV8mg_IEc1gBKx";
 const sessionKey = "yeokjuhang-supabase-session";
 
-export type LearningSession = { access_token: string; user: { id: string; email?: string | null; user_metadata?: { learning_id?: string } } };
+export type LearningSession = {
+  access_token: string;
+  user: { id: string; email?: string | null; user_metadata?: { learning_id?: string } };
+};
 
 function learningEmail(learningId: string) {
-  const safeId = learningId.trim().toLowerCase().replace(/[^a-z0-9가-힣_-]/g, "");
+  const safeId = learningId.trim().toLowerCase().replace(/[^a-z0-9\uac00-\ud7a3_-]/g, "");
   return `${safeId}@yeokjuhang.invalid`;
 }
 
@@ -14,6 +17,19 @@ async function request(path: string, options: RequestInit = {}) {
   headers.set("apikey", publishableKey);
   headers.set("Content-Type", "application/json");
   return fetch(`${supabaseUrl}${path}`, { ...options, headers });
+}
+
+// The GoTrue REST API returns the session directly, while SDK calls wrap it
+// in a `session` property. Supporting both prevents false sign-up failures.
+function sessionFrom(data: unknown): LearningSession | null {
+  const candidate = data && typeof data === "object" && "session" in data
+    ? (data as { session?: unknown }).session
+    : data;
+
+  if (candidate && typeof candidate === "object" && "access_token" in candidate && "user" in candidate) {
+    return candidate as LearningSession;
+  }
+  return null;
 }
 
 export function savedSession() {
@@ -32,12 +48,14 @@ export async function signUp(learningId: string, password: string) {
     body: JSON.stringify({ email: learningEmail(learningId), password, data: { learning_id: learningId.trim() } }),
   });
   const data = await response.json();
-  if (!response.ok) throw new Error(data.msg ?? data.error_description ?? "가입에 실패했어요.");
-  if (data.session) {
-    window.localStorage.setItem(sessionKey, JSON.stringify(data.session));
-    await ensureProfile(data.session, learningId);
+  if (!response.ok) throw new Error(data.msg ?? data.error_description ?? "\uAC00\uC785\uC5D0 \uC2E4\uD328\uD588\uC5B4\uC694.");
+
+  const session = sessionFrom(data);
+  if (session) {
+    window.localStorage.setItem(sessionKey, JSON.stringify(session));
+    await ensureProfile(session, learningId);
   }
-  return data.session as LearningSession | null;
+  return session;
 }
 
 export async function signIn(learningId: string, password: string) {
@@ -46,9 +64,12 @@ export async function signIn(learningId: string, password: string) {
     body: JSON.stringify({ email: learningEmail(learningId), password }),
   });
   const data = await response.json();
-  if (!response.ok) throw new Error(data.msg ?? data.error_description ?? "학습 ID 또는 비밀번호를 확인해 주세요.");
-  window.localStorage.setItem(sessionKey, JSON.stringify(data));
-  return data as LearningSession;
+  if (!response.ok) throw new Error(data.msg ?? data.error_description ?? "\uD559\uC2B5 ID \uB610\uB294 \uBE44\uBC00\uBC88\uD638\uB97C \uD655\uC778\uD574 \uC8FC\uC138\uC694.");
+
+  const session = sessionFrom(data);
+  if (!session) throw new Error("\uB85C\uADF8\uC778 \uC815\uBCF4\uB97C \uBC1B\uC9C0 \uBABB\uD588\uC5B4\uC694. \uB2E4\uC2DC \uC2DC\uB3C4\uD574 \uC8FC\uC138\uC694.");
+  window.localStorage.setItem(sessionKey, JSON.stringify(session));
+  return session;
 }
 
 async function ensureProfile(session: LearningSession, learningId: string) {
