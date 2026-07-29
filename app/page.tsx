@@ -219,7 +219,8 @@ function officialSourceFor(entry: HistoryEntry) {
 // 이미지가 연결되지 않은 개념도 빈칸으로 남지 않도록, 학습자가 확인할 수 있는
 // 공공·교육 기관의 개념 자료를 기본 출처로 연결합니다.
 const trustedConceptSources = {
-  heritage: { label: "국가유산포털 개념 자료", url: "https://www.heritage.go.kr/" },
+  museum: { label: "e뮤지엄(국립중앙박물관) 자료", url: "https://www.emuseum.go.kr/" },
+  heritage: { label: "국가유산청 국가유산 디지털 서비스", url: "https://digital.khs.go.kr/" },
   history: { label: "국사편찬위원회 우리역사넷", url: "https://contents.history.go.kr/" },
   encyclopedia: { label: "한국민족문화대백과사전", url: "https://encykorea.aks.ac.kr/" },
   archives: { label: "국가기록원 역사자료", url: "https://www.archives.go.kr/" },
@@ -227,7 +228,7 @@ const trustedConceptSources = {
 
 function trustedSourceFor(entry: HistoryEntry) {
   const text = `${entry.title} ${entry.era} ${entry.type}`;
-  if (text.includes("\uBB38\uD654") || text.includes("\uC720\uC0B0") || text.includes("\uC720\uBB3C") || text.includes("\uC720\uC801")) return trustedConceptSources.heritage;
+  if (text.includes("\uBB38\uD654") || text.includes("\uC720\uC0B0") || text.includes("\uC720\uBB3C") || text.includes("\uC720\uC801")) return trustedConceptSources.museum;
   if (text.includes("\uC77C\uC81C") || text.includes("\uADFC\uB300") || text.includes("\uB300\uD55C\uBBFC\uAD6D") || text.includes("6\u00B725")) return trustedConceptSources.archives;
   if (text.includes("\uC778\uBB3C") || text.includes("\uC655") || text.includes("\uC0AC\uAC74")) return trustedConceptSources.encyclopedia;
   return trustedConceptSources.history;
@@ -260,7 +261,7 @@ export default function Home() {
   const [learningMode, setLearningMode] = useState<"deep" | "support" | null>(null);
   const selected = allEntries.find((entry) => entry.title === selectedId) ?? allEntries[0];
   const referenceVisual = referenceVisualFor(selected);
-  const officialSource = officialSourceFor(selected);
+  const officialSource = officialSourceFor(selected) ?? trustedSourceFor(selected);
   const showNortheastNineFortressesMap = selected.title === "\uB3D9\uBD81 9\uC131" || selected.keywords.includes("\uB3D9\uBD81 9\uC131");
   const results = useMemo(() => {
     if (!normalize(query)) return [];
@@ -285,7 +286,7 @@ export default function Home() {
   const nextQuiz = () => { if (quizStep < quiz.length - 1) { setQuizStep((step) => step + 1); setQuizChoice(null); setQuizFeedback(null); } else { setQuizStep(quiz.length); setQuizChoice(null); setQuizFeedback(null); } };
   const retryQuiz = () => { setQuizChoice(null); setQuizFeedback(null); };
 
-  return <main className="min-h-screen bg-[#fbf3e4] text-[#41382e]">{!referenceVisual && <section className="mx-auto max-w-6xl px-5 pt-3 md:px-10"><div className="rounded-2xl border border-[#e7d0af] bg-[#fffaf1] p-4 shadow-sm"><p className="text-sm font-black text-[#b36b2c]">개념 설명을 읽어 보세요</p><p className="mt-2 text-sm leading-6 text-stone-700">{selected.summary}</p><p className="mt-2 text-sm leading-6 text-stone-700">{selected.connection}</p><div className="mt-3 grid gap-2 sm:grid-cols-3">{selected.story.map((item) => <div key={item.label} className="rounded-xl bg-white/70 p-3"><p className="text-xs font-black text-[#57958f]">{item.label}</p><p className="mt-1 text-xs leading-5 text-stone-600">{item.value}</p></div>)}</div><a href={(officialSource ?? trustedSourceFor(selected)).url} target="_blank" rel="noreferrer" className="mt-3 inline-block text-xs font-bold text-[#397e79] underline underline-offset-2">출처 확인 · {(officialSource ?? trustedSourceFor(selected)).label}</a></div></section>}
+  return <main className="min-h-screen bg-[#fbf3e4] text-[#41382e]">
     {query && suggestions.length > 0 && <div className="fixed right-5 top-[4.5rem] z-40 w-[min(47vw,440px)] overflow-hidden rounded-2xl border border-[#e0c9a8] bg-white p-2 shadow-lg md:right-12" role="listbox" aria-label="검색어 자동완성">{suggestions.map((entry)=><button type="button" role="option" key={`suggest-${entry.title}`} onClick={()=>select(entry)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left hover:bg-[#fff3df]"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#eaf5ed] text-sm font-black text-[#57958f]">↗</span><span className="min-w-0"><b className="block truncate text-sm">{entry.title}</b><small className="block truncate text-xs text-stone-500">{entry.era} · {entry.type}</small></span></button>)}</div>}
     <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-[#ead5b8] bg-[#fff9ef]/95 px-5 py-3 backdrop-blur md:px-12"><div><b className="text-2xl tracking-tight text-[#d2744d]">{t.app}</b><span className="ml-2 text-xs text-stone-500">{t.sub}</span></div><div className="flex items-center gap-2"><label className="relative w-[min(47vw,440px)]"><span className="absolute left-3 top-2 text-lg text-[#57958f]">⌕</span><input className="w-full rounded-full border border-[#e0c9a8] bg-white px-9 py-2 text-sm outline-none focus:border-[#57958f]" value={query} onChange={(event)=>setQuery(event.target.value)} placeholder={t.search} aria-label={t.search}/></label><LearningAccount /></div></header>
     {showWelcome && !query ? <LandingHero onStart={() => setShowWelcome(false)} /> : <section className="mx-auto max-w-6xl px-5 py-9 md:px-10"><p className="text-xs font-bold text-[#d2744d]">{t.home}</p><h1 className="mt-2 text-4xl font-black tracking-tight md:text-5xl">{selected.title}</h1><p className="mt-2 text-stone-500">{selected.era} · {selected.years}</p>
