@@ -10,11 +10,22 @@ const t = {
 
 function normalize(value: string) { return value.toLowerCase().replace(/[\s·.\-~]/g, ""); }
 function yearOf(entry: HistoryEntry) { const found = entry.years.match(/\d{1,4}/); return found ? Number(found[0]) : 0; }
+type QuizQuestion = { question: string; options: string[]; answer: number; explanation: string };
+function quizFor(entry: HistoryEntry): QuizQuestion[] {
+  const related = entry.related[0]?.label ?? "관련 개념";
+  return [
+    { question: `${entry.title}은(는) 어느 시대와 연결될까요?`, options: [entry.era, "삼국 시대", "조선 시대", "일제강점기"], answer: 0, explanation: `${entry.title}은(는) ${entry.era}에 해당하고, 연도는 ${entry.years}입니다.` },
+    { question: `${entry.title}에 대한 설명으로 알맞은 것은 무엇일까요?`, options: [entry.summary, "현대 사회에서 처음 생긴 개념이에요.", "시대와 연도를 확인할 필요가 없는 이야기예요.", "다른 역사 개념과 연결할 수 없는 내용이에요."], answer: 0, explanation: entry.summary },
+    { question: `${entry.title}을(를) 공부할 때 함께 살펴보면 좋은 개념은 무엇일까요?`, options: [related, "오늘날의 스마트 기기", "계절별 날씨", "학교 급식 메뉴"], answer: 0, explanation: `${entry.title}은(는) ${related}와 연결해 살펴보면 역사 흐름을 더 잘 이해할 수 있어요.` },
+  ];
+}
 
 export default function Home() {
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState("\uACE0\uB824");
-  const [answer, setAnswer] = useState("");
+  const [quizStep, setQuizStep] = useState(0);
+  const [quizChoice, setQuizChoice] = useState<number | null>(null);
+  const [quizFeedback, setQuizFeedback] = useState<"correct" | "wrong" | null>(null);
   const [learningMode, setLearningMode] = useState<"deep" | "support" | null>(null);
   const selected = allEntries.find((entry) => entry.title === selectedId) ?? allEntries[0];
   const results = useMemo(() => {
@@ -25,8 +36,12 @@ export default function Home() {
   const ordered = useMemo(() => [...allEntries].sort((a,b) => yearOf(a) - yearOf(b)), []);
   const currentIndex = ordered.findIndex((entry) => entry.title === selected.title);
   const nearby = ordered.filter((_, index) => index >= Math.max(0,currentIndex-2) && index <= Math.min(ordered.length-1,currentIndex+2));
-  const select = (entry: HistoryEntry) => { setSelectedId(entry.title); setQuery(""); setAnswer(""); setLearningMode(null); };
+  const select = (entry: HistoryEntry) => { setSelectedId(entry.title); setQuery(""); setQuizStep(0); setQuizChoice(null); setQuizFeedback(null); setLearningMode(null); };
   const follow = (term: string) => { const item = allEntries.find((entry) => entry.title === term) ?? allEntries.find((entry) => entry.keywords.includes(term)); if (item) select(item); else setQuery(term); };
+  const quiz = quizFor(selected);
+  const currentQuiz = quiz[quizStep];
+  const answerQuiz = (choice: number) => { if (quizFeedback) return; setQuizChoice(choice); setQuizFeedback(choice === currentQuiz.answer ? "correct" : "wrong"); };
+  const nextQuiz = () => { if (quizStep < quiz.length - 1) { setQuizStep((step) => step + 1); setQuizChoice(null); setQuizFeedback(null); } else { setQuizStep(quiz.length); setQuizChoice(null); setQuizFeedback(null); } };
 
   return <main className="min-h-screen bg-[#fbf3e4] text-[#41382e]">
     <header className="sticky top-0 z-30 flex items-center justify-between border-b border-[#ead5b8] bg-[#fff9ef]/95 px-5 py-3 backdrop-blur md:px-12"><div><b className="text-2xl tracking-tight text-[#d2744d]">{t.app}</b><span className="ml-2 text-xs text-stone-500">{t.sub}</span></div><label className="relative w-[min(47vw,440px)]"><span className="absolute left-3 top-2 text-lg text-[#57958f]">⌕</span><input className="w-full rounded-full border border-[#e0c9a8] bg-white px-9 py-2 text-sm outline-none focus:border-[#57958f]" value={query} onChange={(event)=>setQuery(event.target.value)} placeholder={t.search} aria-label={t.search}/></label></header>
@@ -52,7 +67,7 @@ export default function Home() {
         {learningMode === "deep" ? <><p className="text-xs font-black text-[#b36b2c]">심화 학습 길잡이</p><h2 className="mt-1 text-2xl font-black">{selected.title}에서 더 넓게 이어 가기</h2><div className="mt-4 grid gap-3 md:grid-cols-3">{selected.related.slice(0, 3).map((item, index) => <button type="button" key={`${item.query}-deep`} onClick={() => follow(item.query)} className="rounded-2xl bg-[#fff5df] p-4 text-left hover:bg-[#ffedc4]"><small className="font-bold text-[#b36b2c]">깊이 보기 0{index + 1}</small><b className="mt-2 block">{item.label}</b><span className="mt-1 block text-xs text-stone-600">{item.kind}와 연결해 살펴봐요</span></button>)}</div><p className="mt-4 text-sm leading-6 text-stone-600">위 카드를 눌러 연결 개념을 탐색하고, 마지막에는 ‘무엇이 어떻게 이어졌는지’를 한두 문장으로 정리해 보세요.</p></> : <><p className="text-xs font-black text-[#397e79]">보충 학습 길잡이</p><h2 className="mt-1 text-2xl font-black">{selected.title}을(를) 차근차근 이해하기</h2><div className="mt-4 grid gap-3 md:grid-cols-3"><div className="rounded-2xl bg-[#edf7ef] p-4"><small className="font-bold text-[#397e79]">01 · 먼저</small><p className="mt-2 text-sm leading-6">{selected.era}와 연도를 먼저 확인해요.</p></div><div className="rounded-2xl bg-[#edf7ef] p-4"><small className="font-bold text-[#397e79]">02 · 다음</small><p className="mt-2 text-sm leading-6">{selected.story[0]?.value}</p></div><div className="rounded-2xl bg-[#edf7ef] p-4"><small className="font-bold text-[#397e79]">03 · 다시</small><p className="mt-2 text-sm leading-6">{selected.connection}</p></div></div><p className="mt-4 text-sm leading-6 text-stone-600">이해한 내용을 아래 입력칸에 직접 써 보면 기억에 더 오래 남아요.</p></>}
       </section>}
       <section className="mt-6 rounded-3xl border border-[#d9e5dc] bg-[#eff7f1] p-5"><h2 className="font-black">{t.beforeAfter}</h2><div className="mt-4 grid gap-3 md:grid-cols-5">{nearby.map((entry)=><button key={entry.title} onClick={()=>select(entry)} className={entry.title===selected.title ? "rounded-2xl bg-[#57958f] p-4 text-left text-white" : "rounded-2xl bg-white p-4 text-left hover:bg-[#fff3dd]"}><small>{entry.years}</small><b className="mt-1 block">{entry.title}</b><span className="mt-2 block text-xs opacity-80">{entry.era}</span></button>)}</div></section>
-      <section className="mt-6 rounded-3xl border border-[#ead5b8] bg-white p-5"><label className="font-black">{t.write}</label><p className="mt-1 text-sm text-stone-600">{selected.prompt}</p><textarea className="mt-3 min-h-24 w-full rounded-2xl border border-[#e3cfb2] p-4 outline-none focus:border-[#57958f]" value={answer} onChange={(event)=>setAnswer(event.target.value)} placeholder={t.write}/></section>
+      <section className="mt-6 rounded-3xl border border-[#ead5b8] bg-white p-5" aria-label="정리 퀴즈"><div className="flex flex-wrap items-end justify-between gap-2"><div><p className="text-xs font-black text-[#d2744d]">배운 내용을 확인해요</p><h2 className="mt-1 text-2xl font-black">정리 퀴즈</h2></div><span className="rounded-full bg-[#fff0cf] px-3 py-1 text-xs font-bold text-[#aa6d28]">{quizStep < quiz.length ? `${quizStep + 1} / ${quiz.length} 문제` : "학습 완료"}</span></div>{quizStep < quiz.length ? <><p className="mt-4 text-base font-bold leading-7">{currentQuiz.question}</p><div className="mt-3 grid gap-2">{currentQuiz.options.map((option, index) => { const chosen = quizChoice === index; const correct = currentQuiz.answer === index; const style = quizFeedback && correct ? "border-[#57958f] bg-[#eaf5ed]" : chosen && quizFeedback === "wrong" ? "border-[#d97970] bg-[#fff0ed]" : "border-[#e7d7c0] bg-[#fffaf2] hover:bg-[#fff4df]"; return <button type="button" key={option} onClick={() => answerQuiz(index)} className={`rounded-2xl border-2 p-3 text-left text-sm leading-6 transition ${style}`}><span className="mr-2 inline-grid h-6 w-6 place-items-center rounded-full bg-white font-black text-[#b36b2c]">{index + 1}</span>{option}</button>; })}</div>{quizFeedback && <div className={`mt-4 rounded-2xl p-4 ${quizFeedback === "correct" ? "bg-[#eaf5ed]" : "bg-[#fff0ed]"}`}><p className={`font-black ${quizFeedback === "correct" ? "text-[#397e79]" : "text-[#b6534a]"}`}>{quizFeedback === "correct" ? "정답이에요!" : "다시 살펴봐요."}</p><p className="mt-1 text-sm leading-6">{currentQuiz.explanation}</p><button type="button" onClick={nextQuiz} className="mt-3 rounded-full bg-[#57958f] px-4 py-2 text-xs font-black text-white">{quizStep === quiz.length - 1 ? "퀴즈 끝내기" : "설명 확인하고 다음 문제"} →</button></div>}</> : <div className="mt-4 rounded-2xl bg-[#eaf5ed] p-5"><p className="font-black text-[#397e79]">정리 퀴즈를 모두 풀었어요!</p><p className="mt-1 text-sm leading-6">{selected.title}의 시대와 핵심 흐름을 잘 확인했어요. 다른 개념을 검색해 또 도전해 보세요.</p><button type="button" onClick={() => { setQuizStep(0); setQuizChoice(null); setQuizFeedback(null); }} className="mt-3 rounded-full bg-[#57958f] px-4 py-2 text-xs font-black text-white">다시 풀기</button></div>}</section>
     </section>
   </main>;
 }
