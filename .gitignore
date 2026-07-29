@@ -40,3 +40,7 @@ next-env.d.ts
 /.wrangler/
 /outputs/
 /work/
+
+# Uploaded reference PDFs are kept locally for content review; deployment uses
+# the lightweight resource catalog in data/history-resource-data.ts.
+/reference-materials/history-comics-2026-07-30/*.pdf
