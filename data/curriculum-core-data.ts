@@ -31,7 +31,7 @@ export const curriculumCoreEntries: HistoryEntry[] = allSeeds.map(({ title, sect
     type,
     era: section.era,
     years: section.years,
-    summary: `${section.era}에 등장하거나 연결되는 핵심 개념이에요. ${title}의 뜻을 앞뒤 시대의 인물·사건·문화유산과 함께 살펴보면 역사 흐름을 이해하기 쉬워요.`,
+    summary: `${section.era}에 등장하거나 연결되는 핵심 개념이에요.`,
     connection: `이 개념은 ${section.era}의 흐름 속에서 ${neighbors.join("·") || "앞뒤 사건"}과 연결해 기억해 보세요.`,
     related,
     story: [
