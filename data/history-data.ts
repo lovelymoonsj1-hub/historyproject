@@ -1,6 +1,6 @@
 export type HistoryEntry = {
   title: string;
-  type: "나라" | "인물" | "사건" | "문화유산" | "왕" | "시대" | "생활" | "정부";
+  type: "나라" | "인물" | "사건" | "문화유산" | "왕" | "시대" | "생활" | "제도" | "정부";
   era: string;
   years: string;
   summary: string;
