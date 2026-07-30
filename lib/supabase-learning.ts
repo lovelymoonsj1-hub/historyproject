@@ -1,5 +1,6 @@
-const supabaseUrl = "https://bchmoqgkespahyjkzkxb.supabase.co";
-const publishableKey = "sb_publishable_Fg-P-6yk0XChZZ3qkWV8mg_IEc1gBKx";
+const runtimeEnv = typeof process !== "undefined" ? process.env : undefined;
+const supabaseUrl = runtimeEnv?.NEXT_PUBLIC_SUPABASE_URL ?? "https://bchmoqgkespahyjkzkxb.supabase.co";
+const publishableKey = runtimeEnv?.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "sb_publishable_Fg-P-6yk0XChZZ3qkWV8mg_IEc1gBKx";
 const sessionKey = "yeokjuhang-supabase-session";
 const assignmentPendingKey = "yeokjuhang-class-assignment-pending";
 
