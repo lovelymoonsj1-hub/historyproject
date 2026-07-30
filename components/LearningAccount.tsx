@@ -44,13 +44,14 @@ export function LearningAccount() {
       if (!next) throw new Error("로그인 정보를 확인하지 못했어요.");
       setSession(next);
       await reflectAccountType(next);
+      window.dispatchEvent(new Event("learning-session-changed"));
       setOpen(false);
       setPassword("");
     } catch (error) { setMessage(friendlyErrorMessage(error, mode)); }
     finally { setBusy(false); }
   };
 
-  const logout = () => { clearSession(); setSession(null); setIsTeacher(false); setOpen(false); };
+  const logout = () => { clearSession(); setSession(null); setIsTeacher(false); setOpen(false); window.dispatchEvent(new Event("learning-session-changed")); };
   const label = session?.user.user_metadata?.learning_id ?? session?.user.email?.split("@")[0];
 
   return <div className="relative flex items-center gap-2">

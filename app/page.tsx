@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { historyEntries, type HistoryEntry } from "../data/history-data";
 import { lateHistoryEntries } from "../data/late-history-data";
 import { additionalSearchEntries } from "../data/additional-search-data";
@@ -9,7 +9,7 @@ import { conceptSupportEntries } from "../data/concept-support-data";
 import { worksheetNoteFor } from "../data/worksheet-answer-data";
 import { historyResourceFor } from "../data/history-resource-data";
 import { LearningAccount } from "../components/LearningAccount";
-import { recordQuizAttempt } from "../lib/supabase-learning";
+import { recordQuizAttempt, savedSession } from "../lib/supabase-learning";
 
 const entryKey = (value: string) => value.toLowerCase().normalize("NFC").replace(/[^0-9a-z\uac00-\ud7a3]/g, "");
 const allEntries = [...historyEntries, ...lateHistoryEntries, ...additionalSearchEntries, ...curriculumCoreEntries, ...conceptSupportEntries]
@@ -258,10 +258,31 @@ function LandingHero({ onStart }: { onStart: () => void }) {
   </section>;
 }
 
+function LoggedInHome({ query, onQueryChange, onStart }: { query: string; onQueryChange: (value: string) => void; onStart: () => void }) {
+  return <section className="mx-auto max-w-6xl px-5 py-8 md:px-10 md:py-12" aria-label="로그인 후 역사 탐색 홈">
+    <div className="relative overflow-hidden rounded-[34px] border border-[#ead0aa] bg-[#fff9ef] shadow-sm">
+      <img src="/images/history-explorers-hero.png" alt="학생들이 역사 지도를 함께 탐구하는 모습" className="absolute inset-0 h-full w-full object-cover opacity-20" />
+      <div className="relative mx-auto flex min-h-[520px] max-w-4xl flex-col items-center justify-center px-5 py-16 text-center md:min-h-[570px]">
+        <p className="text-lg font-black text-[#d2744d] md:text-xl">오늘은 어느 시대를 탐험해 볼까요?</p>
+        <h1 className="mt-4 text-4xl font-black leading-tight text-[#41382e] md:text-6xl">역사는 흐름이고,<br /><span className="text-[#d2744d]">탐험은 매일 새로워요.</span></h1>
+        <p className="mt-5 max-w-xl text-base leading-8 text-stone-700 md:text-lg">궁금한 인물·사건·문화유산을 검색하면 시대, 연도, 배경과 연결 개념을 한눈에 살펴볼 수 있어요.</p>
+        <label className="relative mt-9 block w-full max-w-2xl">
+          <span className="sr-only">역사 개념 검색</span>
+          <span className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-2xl text-[#57958f]">⌕</span>
+          <input autoFocus value={query} onChange={(event) => onQueryChange(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && query.trim()) onStart(); }} className="w-full rounded-full border-2 border-[#e0c9a8] bg-white/95 px-14 py-5 text-lg shadow-lg outline-none transition focus:border-[#57958f] md:text-xl" placeholder="궁금한 인물·사건·문화유산을 검색해 보세요" />
+        </label>
+        <p className="mt-4 text-sm text-stone-600">예: 세종, 강화도조약, 금동 미륵보살 반가사유상</p>
+        <button type="button" onClick={onStart} className="mt-7 rounded-full bg-[#57958f] px-7 py-3 text-base font-black text-white shadow-sm hover:bg-[#397e79]">시간의 흐름에서 탐험하기 →</button>
+      </div>
+    </div>
+  </section>;
+}
+
 export default function Home() {
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState("\uAD6C\uC11D\uAE30 \uC2DC\uB300");
   const [showWelcome, setShowWelcome] = useState(true);
+  const [hasSession, setHasSession] = useState(false);
   const [quizStep, setQuizStep] = useState(0);
   const [quizChoice, setQuizChoice] = useState<number | null>(null);
   const [quizFeedback, setQuizFeedback] = useState<"correct" | "wrong" | null>(null);
@@ -285,6 +306,12 @@ export default function Home() {
   const nearby = ordered.filter((_, index) => index >= Math.max(0,currentIndex-2) && index <= Math.min(ordered.length-1,currentIndex+2));
   const select = (entry: HistoryEntry) => { setSelectedId(entry.title); setShowWelcome(false); setQuery(""); setQuizStep(0); setQuizChoice(null); setQuizFeedback(null); setLearningMode(null); };
   const follow = (term: string) => { const item = allEntries.find((entry) => entry.title === term) ?? allEntries.find((entry) => entry.keywords.includes(term)); if (item) select(item); else setQuery(term); };
+  useEffect(() => {
+    const sync = () => setHasSession(Boolean(savedSession()));
+    sync();
+    window.addEventListener("learning-session-changed", sync);
+    return () => window.removeEventListener("learning-session-changed", sync);
+  }, []);
   const quiz = quizFor(selected);
   const currentQuiz = quiz[quizStep];
   if (quizFeedback === "wrong" && quizChoice !== null && currentQuiz) {
@@ -298,7 +325,7 @@ export default function Home() {
     {historyResource && <div className="mx-auto max-w-6xl px-5 pt-3 text-xs text-stone-500 md:px-10">추가 참고 자료 · {historyResource.label} ({historyResource.coverage})</div>}
     {query && suggestions.length > 0 && <div className="fixed right-5 top-[4.5rem] z-40 w-[min(47vw,440px)] overflow-hidden rounded-2xl border border-[#e0c9a8] bg-white p-2 shadow-lg md:right-12" role="listbox" aria-label="검색어 자동완성">{suggestions.map((entry)=><button type="button" role="option" key={`suggest-${entry.title}`} onClick={()=>select(entry)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left hover:bg-[#fff3df]"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#eaf5ed] text-sm font-black text-[#57958f]">↗</span><span className="min-w-0"><b className="block truncate text-sm">{entry.title}</b><small className="block truncate text-xs text-stone-500">{entry.era} · {entry.type}</small></span></button>)}</div>}
     <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-[#ead5b8] bg-[#fff9ef]/95 px-5 py-3 backdrop-blur md:px-12"><div><b className="text-2xl tracking-tight text-[#d2744d]">{t.app}</b><span className="ml-2 text-xs text-stone-500">{t.sub}</span></div><div className="flex items-center gap-2"><label className="relative w-[min(47vw,440px)]"><span className="absolute left-3 top-2 text-lg text-[#57958f]">⌕</span><input className="w-full rounded-full border border-[#e0c9a8] bg-white px-9 py-2 text-sm outline-none focus:border-[#57958f]" value={query} onChange={(event)=>setQuery(event.target.value)} placeholder={t.search} aria-label={t.search}/></label><LearningAccount /></div></header>
-    {showWelcome && !query ? <LandingHero onStart={() => setShowWelcome(false)} /> : <section className="mx-auto max-w-6xl px-5 py-9 md:px-10"><p className="text-xs font-bold text-[#d2744d]">{t.home}</p><h1 className="mt-2 text-4xl font-black tracking-tight md:text-5xl">{selected.title}</h1><p className="mt-2 text-stone-500">{selected.era} · {selected.years}</p>
+    {showWelcome && !query ? (hasSession ? <LoggedInHome query={query} onQueryChange={setQuery} onStart={() => setShowWelcome(false)} /> : <LandingHero onStart={() => setShowWelcome(false)} />) : <section className="mx-auto max-w-6xl px-5 py-9 md:px-10"><p className="text-xs font-bold text-[#d2744d]">{t.home}</p><h1 className="mt-2 text-4xl font-black tracking-tight md:text-5xl">{selected.title}</h1><p className="mt-2 text-stone-500">{selected.era} · {selected.years}</p>
       {query && <section className="mt-5 rounded-3xl border border-[#e6d0b1] bg-white p-5"><h2 className="font-bold">{t.result} <span className="text-[#d2744d]">{results.length}</span></h2>{results.length ? <div className="mt-3 grid gap-2 md:grid-cols-2">{results.map((entry)=><button className="rounded-2xl bg-[#fff5e5] p-4 text-left hover:bg-[#e8f3ed]" key={entry.title} onClick={()=>select(entry)}><small className="text-[#57958f]">{entry.era} · {entry.type}</small><b className="ml-2">{entry.title}</b><p className="mt-2 text-xs text-stone-600">{entry.summary}</p></button>)}</div> : <p className="mt-3 text-sm text-stone-600">{t.noResult} {t.hint}</p>}</section>}
       <div className="mt-7 grid gap-5 lg:grid-cols-[1.45fr_.8fr]">
         <article className="overflow-hidden rounded-[28px] border border-[#e7d0af] bg-[#fffaf1] shadow-sm"><div className="bg-gradient-to-r from-[#f8d7a7] to-[#e3efe6] p-6"><span className="rounded-full bg-[#57958f] px-3 py-1 text-xs font-bold text-white">{selected.type}</span><p className="mt-4 text-lg leading-8">{selected.summary}</p></div>{referenceVisual && <figure className="border-y border-[#ead8bd] bg-[#fff6e8] p-4 sm:p-5"><div className="overflow-hidden rounded-2xl border border-[#e7cfaa] bg-white"><img src={referenceVisual.src} alt={`${referenceVisual.title} 교과서 참고 그림`} className="h-56 w-full object-cover object-top sm:h-72" loading="lazy" /></div><figcaption className="mt-3"><p className="text-sm font-black text-[#b36b2c]">그림으로 살펴보기 · {referenceVisual.title}</p><p className="mt-1 text-sm leading-6 text-stone-600">{referenceVisual.note}</p><p className="mt-2 text-xs text-stone-500">YBM 사회 5-2 교과서 참고 그림</p>{officialSource && <a href={officialSource.url} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs font-bold text-[#397e79] underline underline-offset-2">공식 자료 출처 보기 · {officialSource.label}</a>}</figcaption></figure>}{!referenceVisual && officialSource && <div className="border-y border-[#ead8bd] bg-[#fff6e8] p-5"><p className="text-sm font-black text-[#b36b2c]">공식 이미지 자료를 함께 살펴보세요</p><p className="mt-1 text-sm leading-6 text-stone-600">이 개념의 원문 이미지와 설명을 기관 자료에서 확인할 수 있어요.</p><a href={officialSource.url} target="_blank" rel="noreferrer" className="mt-3 inline-flex rounded-full bg-[#57958f] px-4 py-2 text-xs font-black text-white">{officialSource.label} 열기 →</a></div>}<div className="p-6"><h2 className="text-sm font-bold text-[#57958f]">{t.flow}</h2><p className="mt-2 text-lg font-bold leading-7">{selected.connection}</p><div className="mt-6 grid gap-3 md:grid-cols-3">{selected.story.map((item,index)=><div className="rounded-2xl border-t-4 border-[#e9a05d] bg-[#fff4df] p-4" key={item.label}><small className="font-bold text-[#b36b2c]">0{index+1} · {item.label}</small><p className="mt-2 text-sm leading-6 text-stone-700">{item.value}</p></div>)}</div></div></article>
