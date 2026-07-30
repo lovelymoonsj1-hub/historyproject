@@ -261,13 +261,13 @@ function LandingHero({ onStart }: { onStart: () => void }) {
 function LoggedInHome({ query, suggestions, onQueryChange, onSelect, onStart }: { query: string; suggestions?: HistoryEntry[]; onQueryChange: (value: string) => void; onSelect?: (entry: HistoryEntry) => void; onStart: () => void }) {
   const visibleSuggestions = suggestions?.length ? suggestions : allEntries.filter((entry) => searchScore(entry, query) >= 0).slice(0, 5);
   return <section className="mx-auto max-w-6xl px-5 py-8 md:px-10 md:py-12" aria-label="로그인 후 역사 탐색 홈">
-    <div className="relative overflow-hidden rounded-[34px] border border-[#ead0aa] bg-[#fff9ef] shadow-sm">
+    <div className="relative overflow-visible rounded-[34px] border border-[#ead0aa] bg-[#fff9ef] shadow-sm">
       <img src="/images/history-explorers-hero.png" alt="학생들이 역사 지도를 함께 탐구하는 모습" className="absolute inset-0 h-full w-full object-cover opacity-20" />
       <div className="relative mx-auto flex min-h-[520px] max-w-4xl flex-col items-center justify-center px-5 py-16 text-center md:min-h-[570px]">
         <p className="text-lg font-black text-[#d2744d] md:text-xl">오늘은 어느 시대를 탐험해 볼까요?</p>
         <h1 className="mt-4 text-4xl font-black leading-tight text-[#41382e] md:text-6xl">역사는 흐름이고,<br /><span className="text-[#d2744d]">탐험은 매일 새로워요.</span></h1>
         <p className="mt-5 max-w-xl text-base leading-8 text-stone-700 md:text-lg">궁금한 인물·사건·문화유산을 검색하면 시대, 연도, 배경과 연결 개념을 한눈에 살펴볼 수 있어요.</p>
-        <div className="relative mt-9 w-full max-w-2xl">
+        <div className="relative mt-9 w-full max-w-2xl -translate-y-6">
         <label className="block w-full">
           <span className="sr-only">역사 개념 검색</span>
           <span className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-2xl text-[#57958f]">⌕</span>
