@@ -258,7 +258,8 @@ function LandingHero({ onStart }: { onStart: () => void }) {
   </section>;
 }
 
-function LoggedInHome({ query, onQueryChange, onStart }: { query: string; onQueryChange: (value: string) => void; onStart: () => void }) {
+function LoggedInHome({ query, suggestions, onQueryChange, onSelect, onStart }: { query: string; suggestions?: HistoryEntry[]; onQueryChange: (value: string) => void; onSelect?: (entry: HistoryEntry) => void; onStart: () => void }) {
+  const visibleSuggestions = suggestions?.length ? suggestions : allEntries.filter((entry) => searchScore(entry, query) >= 0).slice(0, 5);
   return <section className="mx-auto max-w-6xl px-5 py-8 md:px-10 md:py-12" aria-label="로그인 후 역사 탐색 홈">
     <div className="relative overflow-hidden rounded-[34px] border border-[#ead0aa] bg-[#fff9ef] shadow-sm">
       <img src="/images/history-explorers-hero.png" alt="학생들이 역사 지도를 함께 탐구하는 모습" className="absolute inset-0 h-full w-full object-cover opacity-20" />
@@ -266,11 +267,14 @@ function LoggedInHome({ query, onQueryChange, onStart }: { query: string; onQuer
         <p className="text-lg font-black text-[#d2744d] md:text-xl">오늘은 어느 시대를 탐험해 볼까요?</p>
         <h1 className="mt-4 text-4xl font-black leading-tight text-[#41382e] md:text-6xl">역사는 흐름이고,<br /><span className="text-[#d2744d]">탐험은 매일 새로워요.</span></h1>
         <p className="mt-5 max-w-xl text-base leading-8 text-stone-700 md:text-lg">궁금한 인물·사건·문화유산을 검색하면 시대, 연도, 배경과 연결 개념을 한눈에 살펴볼 수 있어요.</p>
-        <label className="relative mt-9 block w-full max-w-2xl">
+        <div className="relative mt-9 w-full max-w-2xl">
+        <label className="block w-full">
           <span className="sr-only">역사 개념 검색</span>
           <span className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-2xl text-[#57958f]">⌕</span>
           <input autoFocus value={query} onChange={(event) => onQueryChange(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && query.trim()) onStart(); }} className="w-full rounded-full border-2 border-[#e0c9a8] bg-white/95 px-14 py-5 text-lg shadow-lg outline-none transition focus:border-[#57958f] md:text-xl" placeholder="궁금한 인물·사건·문화유산을 검색해 보세요" />
         </label>
+        {query && visibleSuggestions.length > 0 && <div className="absolute left-0 right-0 top-[calc(100%+0.6rem)] z-20 overflow-hidden rounded-2xl border border-[#e0c9a8] bg-white p-2 text-left shadow-xl" role="listbox" aria-label="검색어 자동완성">{visibleSuggestions.map((entry)=><button type="button" role="option" key={`home-suggest-${entry.title}`} onClick={()=>onSelect ? onSelect(entry) : onStart()} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 hover:bg-[#fff3df]"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#eaf5ed] text-[#57958f]">↗</span><span><b className="block text-sm">{entry.title}</b><small className="block text-xs text-stone-500">{entry.era} · {entry.type}</small></span></button>)}</div>}
+        </div>
         <p className="mt-4 text-sm text-stone-600">예: 세종, 강화도조약, 금동 미륵보살 반가사유상</p>
         <button type="button" onClick={onStart} className="mt-7 rounded-full bg-[#57958f] px-7 py-3 text-base font-black text-white shadow-sm hover:bg-[#397e79]">시간의 흐름에서 탐험하기 →</button>
       </div>
@@ -300,11 +304,14 @@ export default function Home() {
       .sort((a, b) => b.score - a.score)
       .map(({ entry }) => entry);
   }, [query]);
-  const suggestions = results.slice(0, 5);
+  // 홈 화면 자동완성은 중앙 검색창에서만 표시하고, 상단 검색창용 목록은 상세 화면에서만 사용합니다.
+  const suggestions = showWelcome ? [] : results.slice(0, 5);
+  const homeSuggestions = results.slice(0, 5);
   const ordered = useMemo(() => [...allEntries].sort((a,b) => yearOf(a) - yearOf(b)), []);
   const currentIndex = ordered.findIndex((entry) => entry.title === selected.title);
   const nearby = ordered.filter((_, index) => index >= Math.max(0,currentIndex-2) && index <= Math.min(ordered.length-1,currentIndex+2));
   const select = (entry: HistoryEntry) => { setSelectedId(entry.title); setShowWelcome(false); setQuery(""); setQuizStep(0); setQuizChoice(null); setQuizFeedback(null); setLearningMode(null); };
+  const submitSearch = () => { if (results[0]) select(results[0]); else setShowWelcome(false); };
   const follow = (term: string) => { const item = allEntries.find((entry) => entry.title === term) ?? allEntries.find((entry) => entry.keywords.includes(term)); if (item) select(item); else setQuery(term); };
   useEffect(() => {
     const sync = () => setHasSession(Boolean(savedSession()));
@@ -312,6 +319,12 @@ export default function Home() {
     window.addEventListener("learning-session-changed", sync);
     return () => window.removeEventListener("learning-session-changed", sync);
   }, []);
+  useEffect(() => {
+    if (!showWelcome && query.trim() && results[0]) {
+      setSelectedId(results[0].title);
+      setQuery("");
+    }
+  }, [showWelcome]);
   const quiz = quizFor(selected);
   const currentQuiz = quiz[quizStep];
   if (quizFeedback === "wrong" && quizChoice !== null && currentQuiz) {
