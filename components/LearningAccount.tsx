@@ -31,6 +31,9 @@ export function LearningAccount() {
     const existing = savedSession();
     setSession(existing);
     if (existing) void reflectAccountType(existing);
+    const openLogin = () => { setMode("signin"); setMessage(""); setOpen(true); };
+    window.addEventListener("open-learning-account", openLogin);
+    return () => window.removeEventListener("open-learning-account", openLogin);
   }, []);
 
   const submit = async () => {
