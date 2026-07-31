@@ -41,6 +41,38 @@ export default function TeacherDashboard() {
     setClassroomId((current) => current || nextClasses[0]?.id || "");
   };
 
+  const loadClassData = async (id: string) => {
+    if (!id) { setMembers([]); setRecords([]); return; }
+    setLoading(true);
+    try {
+      const [nextMembers, nextRecords] = await Promise.all([classroomMembers(id), classroomRecords(id)]);
+      setMembers(nextMembers);
+      setRecords(nextRecords);
+      setMessage("");
+    } catch {
+      setMessage("학급 데이터를 새로 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
+    } finally { setLoading(false); }
+  };
+
+  const refreshDashboard = async () => {
+    setLoading(true);
+    setMessage("");
+    try {
+      try { await syncTeacherClassMembers(); } catch { /* Existing data can still be refreshed. */ }
+      const nextClasses = await teacherClassrooms();
+      setClasses(nextClasses);
+      const nextClassroomId = classroomId || nextClasses[0]?.id || "";
+      setClassroomId(nextClassroomId);
+      if (nextClassroomId) {
+        const [nextMembers, nextRecords] = await Promise.all([classroomMembers(nextClassroomId), classroomRecords(nextClassroomId)]);
+        setMembers(nextMembers);
+        setRecords(nextRecords);
+      } else { setMembers([]); setRecords([]); }
+    } catch {
+      setMessage("학급 데이터를 새로 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
+    } finally { setLoading(false); }
+  };
+
   useEffect(() => {
     const existing = savedSession();
     if (!existing) return;
@@ -53,11 +85,7 @@ export default function TeacherDashboard() {
 
   useEffect(() => {
     if (!classroomId) { setMembers([]); setRecords([]); return; }
-    setLoading(true);
-    Promise.all([classroomMembers(classroomId), classroomRecords(classroomId)])
-      .then(([nextMembers, nextRecords]) => { setMembers(nextMembers); setRecords(nextRecords); })
-      .catch(() => setMessage("학급 데이터를 불러오지 못했어요. 교사용 권한 설정을 확인해 주세요."))
-      .finally(() => setLoading(false));
+    void loadClassData(classroomId);
   }, [classroomId]);
 
   const submit = async () => {
@@ -139,7 +167,7 @@ export default function TeacherDashboard() {
         {message && <p className="mt-4 rounded-xl bg-[#fff0ed] p-3 text-sm text-[#b6534a]">{message}</p>}
         <button disabled={loading} onClick={submit} className="mt-5 w-full rounded-full bg-[#57958f] px-4 py-3 font-black text-white disabled:opacity-60">{loading ? "확인 중…" : mode === "signin" ? "교사 로그인" : "교사 계정과 학급 만들기"}</button>
       </section> : <>
-        <section className="mt-7 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white p-4 shadow-sm"><div><p className="text-xs font-bold text-[#57958f]">선택한 학급</p><b className="text-xl">{activeClass?.class_code ?? "아직 만든 학급이 없어요"}</b></div>{classes.length > 1 && <select value={classroomId} onChange={(e) => setClassroomId(e.target.value)} className="rounded-xl border border-[#e0c9a8] bg-white px-3 py-2">{classes.map((item) => <option key={item.id} value={item.id}>{item.class_code}</option>)}</select>}<button onClick={() => { if (classroomId) { setLoading(true); Promise.all([classroomMembers(classroomId), classroomRecords(classroomId)]).then(([m, r]) => { setMembers(m); setRecords(r); }).finally(() => setLoading(false)); } }} className="rounded-full bg-[#fff0cf] px-4 py-2 text-sm font-black text-[#9b681f]">새로고침</button></section>
+         <section className="mt-7 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white p-4 shadow-sm"><div><p className="text-xs font-bold text-[#57958f]">선택한 학급</p><b className="text-xl">{activeClass?.class_code ?? "아직 만든 학급이 없어요"}</b></div>{classes.length > 1 && <select value={classroomId} onChange={(e) => setClassroomId(e.target.value)} className="rounded-xl border border-[#e0c9a8] bg-white px-3 py-2">{classes.map((item) => <option key={item.id} value={item.id}>{item.class_code}</option>)}</select>}<button type="button" onClick={() => void refreshDashboard()} disabled={loading} className="rounded-full bg-[#fff0cf] px-4 py-2 text-sm font-black text-[#9b681f] disabled:cursor-wait disabled:opacity-60">{loading ? "불러오는 중…" : "새로고침"}</button></section>
         {!classes.length ? <p className="mt-6 rounded-2xl bg-white p-6 text-sm">학급이 아직 없어요. 교사 ID의 생성 규칙을 확인해 주세요.</p> : <>
           <section className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><Metric label="등록 학생" value={`${members.length}명`} note="학습 ID 기준" tone="bg-[#eaf5ed]" /><Metric label="누적 풀이" value={`${records.length}회`} note="정리 퀴즈 응답" tone="bg-[#fff1cf]" /><Metric label="학급 정답률" value={`${stats.totalRate}%`} note="전체 응답 기준" tone="bg-[#f8e5df]" /><Metric label="보충 우선 개념" value={stats.concepts[0]?.title ?? "데이터 수집 중"} note={stats.concepts[0] ? `정답률 ${stats.concepts[0].rate}%` : "퀴즈를 풀면 표시돼요"} tone="bg-[#e9e5f5]" /></section>
           <section className="mt-5 grid gap-5 lg:grid-cols-[1.2fr_.8fr]"><article className="rounded-3xl bg-white p-6 shadow-sm"><h2 className="text-xl font-black">학급 공통 취약 개념</h2><p className="mt-1 text-sm text-stone-600">정답률이 낮은 순서입니다. 최소 1회 이상 응답한 개념만 표시합니다.</p><div className="mt-5 space-y-3">{stats.concepts.slice(0, 5).map((item) => <div key={item.title}><div className="flex justify-between gap-3 text-sm"><b>{item.title}</b><span>{item.rate}% · {item.attempts}회</span></div><div className="mt-2 h-3 overflow-hidden rounded-full bg-[#f3eadc]"><div className="h-full rounded-full bg-[#d97970]" style={{ width: `${item.rate}%` }} /></div></div>)}{!stats.concepts.length && <p className="rounded-2xl bg-[#fff8ec] p-4 text-sm">아직 수집된 퀴즈 기록이 없어요.</p>}</div></article><article className="rounded-3xl bg-white p-6 shadow-sm"><h2 className="text-xl font-black">학습 분포</h2><p className="mt-1 text-sm text-stone-600">정답률을 기준으로 보충과 심화 대상을 살펴봐요.</p><div className="mt-5 grid grid-cols-2 gap-3"><Distribution label="보충 필요" value={stats.distribution.support} color="bg-[#f8ddd8] text-[#af5149]" /><Distribution label="기본 다지기" value={stats.distribution.growing} color="bg-[#fff0cf] text-[#9a671f]" /><Distribution label="심화 추천" value={stats.distribution.deep} color="bg-[#dff1eb] text-[#397e79]" /><Distribution label="미응시" value={stats.distribution.noData} color="bg-[#ece8e3] text-stone-600" /></div></article></section>

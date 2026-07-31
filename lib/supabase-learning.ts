@@ -174,6 +174,7 @@ export async function teacherClassrooms() {
   const session = activeSession();
   const response = await request(`/rest/v1/classrooms?teacher_id=eq.${session.user.id}&select=id,class_code,teacher_id&order=created_at.desc`, {
     headers: { Authorization: `Bearer ${session.access_token}` },
+    cache: "no-store",
   });
   return jsonOrError(response) as Promise<Classroom[]>;
 }
@@ -192,6 +193,7 @@ export async function classroomMembers(classroomId: string) {
   const session = activeSession();
   const response = await request(`/rest/v1/class_memberships?classroom_id=eq.${classroomId}&select=user_id,classroom_id,learning_id,joined_at&order=joined_at`, {
     headers: { Authorization: `Bearer ${session.access_token}` },
+    cache: "no-store",
   });
   return jsonOrError(response) as Promise<ClassMembership[]>;
 }
@@ -200,6 +202,7 @@ export async function classroomRecords(classroomId: string) {
   const session = activeSession();
   const response = await request(`/rest/v1/learning_records?classroom_id=eq.${classroomId}&select=user_id,classroom_id,concept_title,quiz_number,is_correct,created_at&order=created_at.desc`, {
     headers: { Authorization: `Bearer ${session.access_token}` },
+    cache: "no-store",
   });
   return jsonOrError(response) as Promise<LearningRecord[]>;
 }
