@@ -207,6 +207,16 @@ export async function classroomRecords(classroomId: string) {
   return jsonOrError(response) as Promise<LearningRecord[]>;
 }
 
+export async function resetStudentPassword(classroomId: string, studentUserId: string, password: string) {
+  const session = activeSession();
+  const response = await fetch("/api/teacher/reset-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+    body: JSON.stringify({ classroomId, studentUserId, password }),
+  });
+  return jsonOrError(response) as Promise<{ ok: true }>;
+}
+
 export async function recordQuizAttempt(conceptTitle: string, quizNumber: number, isCorrect: boolean, selectedOption: string) {
   const session = savedSession();
   if (!session) return;

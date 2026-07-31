@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   classroomMembers,
   classroomRecords,
+  resetStudentPassword,
   getLearningProfile,
   savedSession,
   signIn,
@@ -33,6 +34,10 @@ export default function TeacherDashboard() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [learningId, setLearningId] = useState("");
   const [password, setPassword] = useState("");
+  const [resetTarget, setResetTarget] = useState<string | null>(null);
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetMessage, setResetMessage] = useState("");
+  const [resetting, setResetting] = useState(false);
 
   const loadClasses = async () => {
     try { await syncTeacherClassMembers(); } catch { /* The dashboard still works before a sync is available. */ }
@@ -110,6 +115,19 @@ export default function TeacherDashboard() {
     } finally { setLoading(false); }
   };
 
+  const submitPasswordReset = async (studentUserId: string) => {
+    if (resetPassword.length < 6) { setResetMessage("새 비밀번호는 6글자 이상으로 입력해 주세요."); return; }
+    setResetting(true); setResetMessage("");
+    try {
+      await resetStudentPassword(classroomId, studentUserId, resetPassword);
+      setResetMessage("학생 비밀번호를 변경했어요.");
+      setResetPassword("");
+      setResetTarget(null);
+    } catch (error) {
+      setResetMessage(error instanceof Error ? error.message : "비밀번호를 변경하지 못했어요.");
+    } finally { setResetting(false); }
+  };
+
   const stats = useMemo(() => {
     const concept = new Map<string, { attempts: number; correct: number }>();
     const student = new Map<string, { attempts: number; correct: number; recentConcept: string | null; recentAt: number }>();
@@ -171,7 +189,7 @@ export default function TeacherDashboard() {
         {!classes.length ? <p className="mt-6 rounded-2xl bg-white p-6 text-sm">학급이 아직 없어요. 교사 ID의 생성 규칙을 확인해 주세요.</p> : <>
           <section className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><Metric label="등록 학생" value={`${members.length}명`} note="학습 ID 기준" tone="bg-[#eaf5ed]" /><Metric label="누적 풀이" value={`${records.length}회`} note="정리 퀴즈 응답" tone="bg-[#fff1cf]" /><Metric label="학급 정답률" value={`${stats.totalRate}%`} note="전체 응답 기준" tone="bg-[#f8e5df]" /><Metric label="보충 우선 개념" value={stats.concepts[0]?.title ?? "데이터 수집 중"} note={stats.concepts[0] ? `정답률 ${stats.concepts[0].rate}%` : "퀴즈를 풀면 표시돼요"} tone="bg-[#e9e5f5]" /></section>
           <section className="mt-5 grid gap-5 lg:grid-cols-[1.2fr_.8fr]"><article className="rounded-3xl bg-white p-6 shadow-sm"><h2 className="text-xl font-black">학급 공통 취약 개념</h2><p className="mt-1 text-sm text-stone-600">정답률이 낮은 순서입니다. 최소 1회 이상 응답한 개념만 표시합니다.</p><div className="mt-5 space-y-3">{stats.concepts.slice(0, 5).map((item) => <div key={item.title}><div className="flex justify-between gap-3 text-sm"><b>{item.title}</b><span>{item.rate}% · {item.attempts}회</span></div><div className="mt-2 h-3 overflow-hidden rounded-full bg-[#f3eadc]"><div className="h-full rounded-full bg-[#d97970]" style={{ width: `${item.rate}%` }} /></div></div>)}{!stats.concepts.length && <p className="rounded-2xl bg-[#fff8ec] p-4 text-sm">아직 수집된 퀴즈 기록이 없어요.</p>}</div></article><article className="rounded-3xl bg-white p-6 shadow-sm"><h2 className="text-xl font-black">학습 분포</h2><p className="mt-1 text-sm text-stone-600">정답률을 기준으로 보충과 심화 대상을 살펴봐요.</p><div className="mt-5 grid grid-cols-2 gap-3"><Distribution label="보충 필요" value={stats.distribution.support} color="bg-[#f8ddd8] text-[#af5149]" /><Distribution label="기본 다지기" value={stats.distribution.growing} color="bg-[#fff0cf] text-[#9a671f]" /><Distribution label="심화 추천" value={stats.distribution.deep} color="bg-[#dff1eb] text-[#397e79]" /><Distribution label="미응시" value={stats.distribution.noData} color="bg-[#ece8e3] text-stone-600" /></div></article></section>
-           <section className="mt-5 rounded-3xl bg-white p-6 shadow-sm"><h2 className="text-xl font-black">학생별 학습 현황</h2><div className="mt-4 overflow-x-auto"><table className="w-full min-w-[700px] text-left text-sm"><thead className="border-b text-stone-500"><tr><th className="pb-3">학습 ID</th><th className="pb-3">최근 학습 개념</th><th className="pb-3">풀이 수</th><th className="pb-3">정답률</th><th className="pb-3">추천</th></tr></thead><tbody>{stats.students.map((item) => <tr key={item.user_id} className="border-b border-[#f0e6d7]"><td className="py-3 font-bold">{item.learning_id}</td><td className="py-3">{item.recentConcept ?? "아직 학습 기록 없음"}</td><td className="py-3">{item.attempts}회</td><td className="py-3">{item.attempts ? `${item.rate}%` : "미응시"}</td><td className="py-3">{!item.attempts ? "학습 시작 안내" : item.rate < 80 ? `보충학습: ${item.weakestConcept ?? "핵심 개념 복습"}` : "비교·서술형 심화"}</td></tr>)}</tbody></table></div></section>
+           <section className="mt-5 rounded-3xl bg-white p-6 shadow-sm"><h2 className="text-xl font-black">학생별 학습 현황</h2><p className="mt-1 text-sm text-stone-600">학생 ID의 비밀번호를 초기화하거나 새 비밀번호로 변경할 수 있어요.</p>{resetMessage && <p className="mt-3 rounded-xl bg-[#eaf5ed] p-3 text-sm text-[#397e79]">{resetMessage}</p>}<div className="mt-4 overflow-x-auto"><table className="w-full min-w-[860px] text-left text-sm"><thead className="border-b text-stone-500"><tr><th className="pb-3">학습 ID</th><th className="pb-3">최근 학습 개념</th><th className="pb-3">풀이 수</th><th className="pb-3">정답률</th><th className="pb-3">추천</th><th className="pb-3">비밀번호 관리</th></tr></thead><tbody>{stats.students.map((item) => <tr key={item.user_id} className="border-b border-[#f0e6d7]"><td className="py-3 font-bold">{item.learning_id}</td><td className="py-3">{item.recentConcept ?? "아직 학습 기록 없음"}</td><td className="py-3">{item.attempts}회</td><td className="py-3">{item.attempts ? `${item.rate}%` : "미응시"}</td><td className="py-3">{!item.attempts ? "학습 시작 안내" : item.rate < 80 ? `보충학습: ${item.weakestConcept ?? "핵심 개념 복습"}` : "비교·서술형 심화"}</td><td className="py-3 align-top">{resetTarget === item.user_id ? <div className="flex min-w-56 flex-col gap-2"><input type="password" value={resetPassword} onChange={(event) => setResetPassword(event.target.value)} placeholder="새 비밀번호 6글자 이상" className="rounded-lg border border-[#e0c9a8] px-2 py-2 text-xs" /><div className="flex gap-2"><button type="button" onClick={() => void submitPasswordReset(item.user_id)} disabled={resetting} className="rounded-full bg-[#57958f] px-3 py-1 text-xs font-black text-white disabled:opacity-60">{resetting ? "변경 중…" : "저장"}</button><button type="button" onClick={() => { setResetTarget(null); setResetPassword(""); }} className="rounded-full bg-[#fff0ed] px-3 py-1 text-xs font-black text-[#b6534a]">취소</button></div></div> : <button type="button" onClick={() => { setResetTarget(item.user_id); setResetPassword(""); setResetMessage(""); }} className="rounded-full bg-[#fff0cf] px-3 py-2 text-xs font-black text-[#9b681f]">비밀번호 변경</button>}</td></tr>)}</tbody></table></div></section>
           <section className="mt-5 rounded-3xl border border-[#b8d6c5] bg-[#eaf5ed] p-6"><p className="text-sm font-black text-[#397e79]">수업 활용 제안</p><h2 className="mt-1 text-xl font-black">다음 수업을 이렇게 준비해 보세요.</h2><p className="mt-2 text-sm leading-6">{stats.concepts[0] ? `학급에서 ‘${stats.concepts[0].title}’의 정답률이 가장 낮아요. 먼저 시간의 흐름과 관련 개념 카드를 활용해 보충학습을 하고, 정답률이 높은 학생에게는 비교·서술형 심화 문제를 제시해 보세요.` : "학생들이 정리 퀴즈를 풀면 학급 공통 어려움과 맞춤 수업 제안이 여기에 나타납니다."}</p></section>
         </>}
       </>}
