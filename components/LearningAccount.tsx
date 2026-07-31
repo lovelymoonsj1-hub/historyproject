@@ -56,7 +56,7 @@ export function LearningAccount() {
 
   return <div className="relative flex items-center gap-2">
     <button type="button" onClick={() => setOpen((value) => !value)} className="rounded-full border border-[#e0c9a8] bg-white px-3 py-2 text-xs font-black text-[#57958f] hover:bg-[#fff3df]">
-      {session ? (isTeacher ? `${label} 교사` : `${label} · 학습 기록`) : "학습 기록 로그인"}
+      {session ? (isTeacher ? `${label} 교사` : `${label} · 학습 기록`) : "회원 가입 / 로그인"}
     </button>
     {session && isTeacher && <a href="/teacher" className="rounded-full bg-[#57958f] px-3 py-2 text-xs font-black text-white hover:bg-[#397e79]">우리반 학습 현황 및 통계</a>}
     {open && <div className="absolute right-0 top-11 z-50 w-80 rounded-3xl border border-[#e0c9a8] bg-white p-5 shadow-xl">
