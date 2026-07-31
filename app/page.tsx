@@ -282,6 +282,34 @@ function LoggedInHome({ query, suggestions, onQueryChange, onSelect, onStart }: 
   </section>;
 }
 
+function GeminiSearchPanel() {
+  const [query, setQuery] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const searchGemini = async () => {
+    if (!query.trim() || loading) return;
+    setLoading(true); setAnswer(""); setError("");
+    try {
+      const response = await fetch("/api/gemini", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query }) });
+      const data = await response.json() as { text?: string; error?: string };
+      if (!response.ok) throw new Error(data.error ?? "설명을 불러오지 못했어요.");
+      setAnswer(data.text ?? "");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "설명을 불러오지 못했어요.");
+    } finally { setLoading(false); }
+  };
+
+  return <section className="mt-6 rounded-3xl border border-[#b9d9d0] bg-[#f4fbf7] p-5 shadow-sm" aria-label="Gemini 보충 검색">
+    <div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-xs font-black tracking-wide text-[#397e79]">Gemini 보충 검색</p><h2 className="mt-1 text-xl font-black">앱에 없는 개념을 더 알아볼까요?</h2></div><span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-[#397e79]">AI 도움</span></div>
+    <div className="mt-4 flex flex-col gap-2 sm:flex-row"><label className="sr-only" htmlFor="gemini-search">Gemini로 검색할 개념</label><input id="gemini-search" value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void searchGemini(); }} placeholder="예: 독서삼품과, 동북 9성" className="min-w-0 flex-1 rounded-full border border-[#b9d9d0] bg-white px-4 py-3 text-sm outline-none focus:border-[#57958f]" /><button type="button" onClick={() => void searchGemini()} disabled={loading || !query.trim()} className="rounded-full bg-[#57958f] px-5 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-50">{loading ? "설명 준비 중…" : "Gemini로 검색"}</button></div>
+    <p className="mt-3 text-xs leading-5 text-stone-600">Gemini의 설명은 학습을 돕는 참고 자료예요. 교과서·지도서와 다를 수 있으므로 중요한 내용은 국가유산청, 국사편찬위원회 등 공식 자료로 다시 확인하세요. 개인정보는 입력하지 마세요.</p>
+    {error && <p className="mt-3 rounded-2xl bg-[#fff0ed] p-3 text-sm text-[#b6534a]">{error}</p>}
+    {answer && <div className="mt-4 rounded-2xl border border-[#d5e9df] bg-white p-4"><p className="text-sm font-black text-[#397e79]">Gemini 보충 설명</p><div className="mt-2 whitespace-pre-wrap text-sm leading-7 text-stone-700">{answer}</div><p className="mt-3 border-t border-[#e5efe9] pt-3 text-xs leading-5 text-stone-500">AI가 생성한 설명입니다. 역사적 사실은 공식 자료와 교과서로 확인해 주세요.</p></div>}
+  </section>;
+}
+
 export default function Home() {
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState("\uAD6C\uC11D\uAE30 \uC2DC\uB300");
@@ -346,7 +374,8 @@ export default function Home() {
     <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-[#ead5b8] bg-[#fff9ef]/95 px-5 py-3 backdrop-blur md:px-12"><div><button type="button" onClick={goHome} className="text-left" aria-label="첫 화면으로 돌아가기"><b className="text-2xl tracking-tight text-[#d2744d]">{t.app}</b><span className="ml-2 text-xs text-stone-500">{t.sub}</span></button></div><div className="flex items-center gap-2">{!showWelcome && <label className="relative w-[min(47vw,440px)]"><span className="absolute left-3 top-2 text-lg text-[#57958f]">⌕</span><input className="w-full rounded-full border border-[#e0c9a8] bg-white px-9 py-2 text-sm outline-none focus:border-[#57958f]" value={query} onChange={(event)=>setQuery(event.target.value)} onKeyDown={(event)=>{ if (event.key === "Enter" && query.trim()) setShowWelcome(false); }} placeholder={t.search} aria-label={t.search}/></label>}<LearningAccount /></div></header>
     {showWelcome ? (hasSession ? <LoggedInHome query={query} onQueryChange={setQuery} onStart={() => setShowWelcome(false)} /> : <LandingHero onStart={() => setShowWelcome(false)} />) : <section className="mx-auto max-w-6xl px-5 py-9 md:px-10"><p className="text-xs font-bold text-[#d2744d]">{t.home}</p><h1 className="mt-2 text-4xl font-black tracking-tight md:text-5xl">{selected.title}</h1><p className="mt-2 text-stone-500">{selected.era} · {selected.years}</p>
       {query && <section className="mt-5 rounded-3xl border border-[#e6d0b1] bg-white p-5"><h2 className="font-bold">{t.result} <span className="text-[#d2744d]">{results.length}</span></h2>{results.length ? <div className="mt-3 grid gap-2 md:grid-cols-2">{results.map((entry)=><button className="rounded-2xl bg-[#fff5e5] p-4 text-left hover:bg-[#e8f3ed]" key={entry.title} onClick={()=>select(entry)}><small className="text-[#57958f]">{entry.era} · {entry.type}</small><b className="ml-2">{entry.title}</b><p className="mt-2 text-xs text-stone-600">{entry.summary}</p></button>)}</div> : <p className="mt-3 text-sm text-stone-600">{t.noResult} {t.hint}</p>}</section>}
-      <div className="mt-7 grid gap-5 lg:grid-cols-[1.45fr_.8fr]">
+       <GeminiSearchPanel />
+       <div className="mt-7 grid gap-5 lg:grid-cols-[1.45fr_.8fr]">
         <article className="overflow-hidden rounded-[28px] border border-[#e7d0af] bg-[#fffaf1] shadow-sm"><div className="bg-gradient-to-r from-[#f8d7a7] to-[#e3efe6] p-6"><span className="rounded-full bg-[#57958f] px-3 py-1 text-xs font-bold text-white">{selected.type}</span><p className="mt-4 text-lg leading-8">{selected.summary}</p></div>{referenceVisual && <figure className="border-y border-[#ead8bd] bg-[#fff6e8] p-4 sm:p-5"><div className="overflow-hidden rounded-2xl border border-[#e7cfaa] bg-white"><img src={referenceVisual.src} alt={`${referenceVisual.title} 교과서 참고 그림`} className="h-56 w-full object-cover object-top sm:h-72" loading="lazy" /></div><figcaption className="mt-3"><p className="text-sm font-black text-[#b36b2c]">그림으로 살펴보기 · {referenceVisual.title}</p><p className="mt-1 text-sm leading-6 text-stone-600">{referenceVisual.note}</p><p className="mt-2 text-xs text-stone-500">YBM 사회 5-2 교과서 참고 그림</p>{officialSource && <a href={officialSource.url} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs font-bold text-[#397e79] underline underline-offset-2">공식 자료 출처 보기 · {officialSource.label}</a>}</figcaption></figure>}{!referenceVisual && officialSource && <div className="border-y border-[#ead8bd] bg-[#fff6e8] p-5"><p className="text-sm font-black text-[#b36b2c]">공식 이미지 자료를 함께 살펴보세요</p><p className="mt-1 text-sm leading-6 text-stone-600">이 개념의 원문 이미지와 설명을 기관 자료에서 확인할 수 있어요.</p><a href={officialSource.url} target="_blank" rel="noreferrer" className="mt-3 inline-flex rounded-full bg-[#57958f] px-4 py-2 text-xs font-black text-white">{officialSource.label} 열기 →</a></div>}<div className="p-6"><h2 className="text-sm font-bold text-[#57958f]">{t.flow}</h2><p className="mt-2 text-lg font-bold leading-7">{selected.connection}</p><div className="mt-6 grid gap-3 md:grid-cols-3">{selected.story.map((item,index)=><div className="rounded-2xl border-t-4 border-[#e9a05d] bg-[#fff4df] p-4" key={item.label}><small className="font-bold text-[#b36b2c]">0{index+1} · {item.label}</small><p className="mt-2 text-sm leading-6 text-stone-700">{item.value}</p></div>)}</div></div></article>
         <aside className="rounded-[28px] border border-[#e7d0af] bg-white p-5"><h2 className="text-lg font-black">{t.related}</h2><div className="mt-3 divide-y divide-[#efe1cc]">{selected.related.map((item)=><button type="button" className="flex w-full items-center gap-3 py-4 text-left hover:text-[#57958f]" key={`${item.label}-${item.kind}`} onClick={()=>follow(item.label)} aria-label={`${item.label} 개념 보기`}><span className="grid h-8 w-8 place-items-center rounded-full bg-[#f9e6c6] text-xs">↗</span><span><small className="block text-xs text-stone-500">{item.kind}</small><b>{item.label}</b></span></button>)}</div><div className="mt-5 rounded-2xl bg-[#fff0cf] p-4"><small className="font-bold text-[#aa6d28]">{t.prompt}</small><p className="mt-1 text-sm leading-6">{selected.prompt}</p></div></aside>
       </div>
