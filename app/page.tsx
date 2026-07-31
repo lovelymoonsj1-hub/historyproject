@@ -311,7 +311,13 @@ export default function Home() {
   const select = (entry: HistoryEntry) => { setSelectedId(entry.title); setShowWelcome(false); setQuery(""); setQuizStep(0); setQuizChoice(null); setQuizFeedback(null); setLearningMode(null); };
   const goHome = () => { setShowWelcome(true); setQuery(""); setQuizStep(0); setQuizChoice(null); setQuizFeedback(null); setLearningMode(null); };
   const submitSearch = () => { if (results[0]) select(results[0]); else setShowWelcome(false); };
-  const follow = (term: string) => { const item = allEntries.find((entry) => entry.title === term) ?? allEntries.find((entry) => entry.keywords.includes(term)); if (item) select(item); else setQuery(term); };
+  const follow = (term: string) => {
+    const normalizedTerm = entryKey(term);
+    const item = allEntries.find((entry) => entryKey(entry.title) === normalizedTerm)
+      ?? allEntries.find((entry) => entry.keywords.some((keyword) => entryKey(keyword) === normalizedTerm));
+    if (item) select(item);
+    else { setShowWelcome(false); setQuery(term); }
+  };
   useEffect(() => {
     const sync = () => setHasSession(Boolean(savedSession()));
     sync();
