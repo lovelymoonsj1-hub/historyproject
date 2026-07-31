@@ -283,6 +283,7 @@ function LoggedInHome({ query, suggestions, onQueryChange, onSelect, onStart }: 
 }
 
 function GeminiSearchPanel() {
+  const [visible, setVisible] = useState(true);
   const [query, setQuery] = useState("");
   const [answer, setAnswer] = useState("");
   const [error, setError] = useState("");
@@ -301,8 +302,10 @@ function GeminiSearchPanel() {
     } finally { setLoading(false); }
   };
 
-  return <section className="mt-6 rounded-3xl border border-[#b9d9d0] bg-[#f4fbf7] p-5 shadow-sm" aria-label="Gemini 보충 검색">
-    <div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-xs font-black tracking-wide text-[#397e79]">Gemini 보충 검색</p><h2 className="mt-1 text-xl font-black">앱에 없는 개념을 더 알아볼까요?</h2></div><span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-[#397e79]">AI 도움</span></div>
+  if (!visible) return <button type="button" onClick={() => setVisible(true)} className="w-full rounded-3xl border border-[#b9d9d0] bg-[#f4fbf7] px-4 py-4 text-left text-sm font-black text-[#397e79] shadow-sm">Gemini 보충 검색 다시 열기</button>;
+
+  return <section className="rounded-3xl border border-[#b9d9d0] bg-[#f4fbf7] p-5 shadow-sm" aria-label="Gemini 보충 검색">
+    <div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-xs font-black tracking-wide text-[#397e79]">Gemini 보충 검색</p><h2 className="mt-1 text-xl font-black">앱에 없는 개념을 더 알아볼까요?</h2></div><div className="flex items-center gap-2"><span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-[#397e79]">AI 도움</span><button type="button" onClick={() => setVisible(false)} className="rounded-full bg-white px-3 py-1 text-xs font-bold text-stone-600 hover:bg-[#e4f2eb]">닫기</button></div></div>
     <div className="mt-4 flex flex-col gap-2 sm:flex-row"><label className="sr-only" htmlFor="gemini-search">Gemini로 검색할 개념</label><input id="gemini-search" value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void searchGemini(); }} placeholder="예: 독서삼품과, 동북 9성" className="min-w-0 flex-1 rounded-full border border-[#b9d9d0] bg-white px-4 py-3 text-sm outline-none focus:border-[#57958f]" /><button type="button" onClick={() => void searchGemini()} disabled={loading || !query.trim()} className="rounded-full bg-[#57958f] px-5 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-50">{loading ? "설명 준비 중…" : "Gemini로 검색"}</button></div>
     <p className="mt-3 text-xs leading-5 text-stone-600">Gemini의 설명은 학습을 돕는 참고 자료예요. 교과서·지도서와 다를 수 있으므로 중요한 내용은 국가유산청, 국사편찬위원회 등 공식 자료로 다시 확인하세요. 개인정보는 입력하지 마세요.</p>
     {error && <p className="mt-3 rounded-2xl bg-[#fff0ed] p-3 text-sm text-[#b6534a]">{error}</p>}
