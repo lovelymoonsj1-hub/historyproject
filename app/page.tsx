@@ -7,7 +7,6 @@ import { additionalSearchEntries } from "../data/additional-search-data";
 import { curriculumCoreEntries } from "../data/curriculum-core-data";
 import { conceptSupportEntries } from "../data/concept-support-data";
 import { worksheetNoteFor } from "../data/worksheet-answer-data";
-import { historyResourceFor } from "../data/history-resource-data";
 import { LearningAccount } from "../components/LearningAccount";
 import { recordQuizAttempt, savedSession } from "../lib/supabase-learning";
 
@@ -294,7 +293,6 @@ export default function Home() {
   const selected = allEntries.find((entry) => entry.title === selectedId) ?? allEntries[0];
   const referenceVisual = referenceVisualFor(selected);
   const officialSource = officialSourceFor(selected) ?? trustedSourceFor(selected);
-  const historyResource = historyResourceFor(selected.title, selected.era);
   const showNortheastNineFortressesMap = selected.title === "\uB3D9\uBD81 9\uC131" || selected.keywords.includes("\uB3D9\uBD81 9\uC131");
   const results = useMemo(() => {
     if (!normalize(query)) return [];
@@ -337,7 +335,6 @@ export default function Home() {
 
   return <main className="min-h-screen bg-[#fbf3e4] text-[#41382e]">
     {!showWelcome && <button type="button" onClick={goHome} className="fixed bottom-5 right-5 z-40 rounded-full bg-[#57958f] px-5 py-3 text-sm font-black text-white shadow-lg hover:bg-[#397e79]">처음 화면으로</button>}
-    {historyResource && <div className="mx-auto max-w-6xl px-5 pt-3 text-xs text-stone-500 md:px-10">추가 참고 자료 · {historyResource.label} ({historyResource.coverage})</div>}
     {query && suggestions.length > 0 && <div className="fixed right-5 top-[4.5rem] z-40 w-[min(47vw,440px)] overflow-hidden rounded-2xl border border-[#e0c9a8] bg-white p-2 shadow-lg md:right-12" role="listbox" aria-label="검색어 자동완성">{suggestions.map((entry)=><button type="button" role="option" key={`suggest-${entry.title}`} onClick={()=>select(entry)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left hover:bg-[#fff3df]"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#eaf5ed] text-sm font-black text-[#57958f]">↗</span><span className="min-w-0"><b className="block truncate text-sm">{entry.title}</b><small className="block truncate text-xs text-stone-500">{entry.era} · {entry.type}</small></span></button>)}</div>}
     <header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-[#ead5b8] bg-[#fff9ef]/95 px-5 py-3 backdrop-blur md:px-12"><div><b className="text-2xl tracking-tight text-[#d2744d]">{t.app}</b><span className="ml-2 text-xs text-stone-500">{t.sub}</span></div><div className="flex items-center gap-2">{!showWelcome && <label className="relative w-[min(47vw,440px)]"><span className="absolute left-3 top-2 text-lg text-[#57958f]">⌕</span><input className="w-full rounded-full border border-[#e0c9a8] bg-white px-9 py-2 text-sm outline-none focus:border-[#57958f]" value={query} onChange={(event)=>setQuery(event.target.value)} onKeyDown={(event)=>{ if (event.key === "Enter" && query.trim()) setShowWelcome(false); }} placeholder={t.search} aria-label={t.search}/></label>}<LearningAccount /></div></header>
     {showWelcome ? (hasSession ? <LoggedInHome query={query} onQueryChange={setQuery} onStart={() => setShowWelcome(false)} /> : <LandingHero onStart={() => setShowWelcome(false)} />) : <section className="mx-auto max-w-6xl px-5 py-9 md:px-10"><p className="text-xs font-bold text-[#d2744d]">{t.home}</p><h1 className="mt-2 text-4xl font-black tracking-tight md:text-5xl">{selected.title}</h1><p className="mt-2 text-stone-500">{selected.era} · {selected.years}</p>
