@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { clearSession, getLearningProfile, savedSession, signIn, signUp, type LearningSession } from "../lib/supabase-learning";
 
 function friendlyErrorMessage(error: unknown, mode: "signin" | "signup") {
@@ -21,6 +21,7 @@ export function LearningAccount() {
   const [isTeacher, setIsTeacher] = useState(false);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const accountRef = useRef<HTMLDivElement>(null);
 
   const reflectAccountType = async (next: LearningSession) => {
     try { setIsTeacher((await getLearningProfile(next))?.role === "teacher"); }
@@ -35,6 +36,15 @@ export function LearningAccount() {
     window.addEventListener("open-learning-account", openLogin);
     return () => window.removeEventListener("open-learning-account", openLogin);
   }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const closeWhenOutside = (event: PointerEvent) => {
+      if (accountRef.current && !accountRef.current.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", closeWhenOutside);
+    return () => document.removeEventListener("pointerdown", closeWhenOutside);
+  }, [open]);
 
   const submit = async () => {
     if (learningId.trim().length < 3 || password.length < 6) {
@@ -57,7 +67,7 @@ export function LearningAccount() {
   const logout = () => { clearSession(); setSession(null); setIsTeacher(false); setOpen(false); window.dispatchEvent(new Event("learning-session-changed")); };
   const label = session?.user.user_metadata?.learning_id ?? session?.user.email?.split("@")[0];
 
-  return <div className="relative flex items-center gap-2">
+  return <div ref={accountRef} className="relative flex items-center gap-2">
     <button type="button" onClick={() => setOpen((value) => !value)} className="rounded-full border border-[#e0c9a8] bg-white px-3 py-2 text-xs font-black text-[#57958f] hover:bg-[#fff3df]">
       {session ? (isTeacher ? `${label} 교사` : `${label} · 학습 기록`) : "회원 가입 / 로그인"}
     </button>
